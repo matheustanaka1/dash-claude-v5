@@ -1,0 +1,2182 @@
+<!-- BP Rider Dashboard v4.0 — 20260417 -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BP Rider — Dublin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script>
+(function(){
+  var u=[
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+    'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'
+  ];
+  var i=0;
+  function ld(){if(i>=u.length)return;var s=document.createElement('script');s.src=u[i++];s.crossOrigin='anonymous';s.onerror=ld;document.head.appendChild(s);}
+  ld();
+})();
+</script>
+<style>
+:root{
+  /* Backgrounds */
+  --bg:#080b0f;--bg2:#0d1117;--bg3:#161b22;--bg4:#21262d;--bg5:#30363d;
+  --border:#21262d;--border2:#30363d;
+
+  /* Text */
+  --text:#e6edf3;--text2:#8b949e;--text3:#6e7781;--text4:#484f58;
+
+  /* Semantic colors */
+  --green:#39d353;           /* receita líquida, positivo */
+  --green-dk:#2da44e;        /* delta positivo */
+  --green-uber1:#3d5a2e;     /* uber order fee - verde musgo escuro */
+  --green-uber2:#6b8a4e;     /* uber tips - verde musgo médio */
+  --red:#f85149;             /* não atingiu */
+  --wine:#8b1a2f;            /* delta negativo */
+  --blue:#58a6ff;            /* receita bruta */
+  --blue-del1:#0969da;       /* deliveroo order fee */
+  --blue-del2:#58a6ff;       /* deliveroo extra fee */
+  --blue-del3:#a5d6ff;       /* deliveroo tips */
+  --amber:#f59e0b;           /* meta (linha pontilhada) */
+  --purple:#bc8cff;          /* média histórica */
+  --gold:#eab308;            /* tips cash */
+
+  /* Semi-transparent variants */
+  --gdim:rgba(57,211,83,0.1);
+  --gborder:rgba(57,211,83,0.3);
+  --rdim:rgba(248,81,73,0.1);
+  --rborder:rgba(248,81,73,0.3);
+  --bdim:rgba(88,166,255,0.1);
+  --bborder:rgba(88,166,255,0.3);
+
+  /* Layout */
+  --r:10px;--rs:8px;
+  --font:'Space Grotesk',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;overflow-x:hidden;}
+body{min-height:100vh;padding-bottom:80px;}
+
+/* ==================== HEADER ==================== */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:10px;}
+.hdr-l{display:flex;align-items:center;gap:10px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(57,211,83,0.4)}50%{box-shadow:0 0 0 6px rgba(57,211,83,0)}}
+.logo{font-size:16px;font-weight:700;letter-spacing:-.5px;}
+.logo b{color:var(--green);}
+.upd{font-size:10px;color:var(--text4);font-family:var(--mono);}
+.rbtn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-family:var(--font);
+  font-size:11px;font-weight:500;padding:6px 12px;border-radius:var(--rs);cursor:pointer;
+  display:flex;align-items:center;gap:5px;transition:all .2s;flex-shrink:0;}
+.rbtn:hover{border-color:var(--green);color:var(--green);}
+.rbtn.off{opacity:.4;pointer-events:none;}
+.sp.on{animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ==================== BOTTOM TABS ==================== */
+.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);
+  display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 4px 8px;gap:3px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:600;
+  letter-spacing:.04em;border:none;background:none;font-family:var(--font);transition:color .2s;}
+.tab.on{color:var(--green);}
+.tab-icon{font-size:18px;line-height:1;}
+
+/* ==================== VIEWS ==================== */
+.view{display:none;padding:14px 14px 20px;}
+.view.on{display:block;}
+
+/* ==================== TYPOGRAPHY HIERARCHY ==================== */
+/* Section title — padronizado em todo dash */
+.stitle{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text3);margin:22px 0 12px;display:flex;align-items:center;gap:10px;}
+.stitle:first-child{margin-top:0;}
+.stitle::after{content:'';flex:1;height:1px;background:var(--border);}
+.stitle .p{font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--text4);
+  background:var(--bg3);padding:2px 8px;border-radius:10px;text-transform:none;}
+
+/* ==================== CARDS ==================== */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+.card+.card{margin-top:10px;}
+
+/* ==================== HERO ==================== */
+.hero{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.hero-day{font-size:14px;font-weight:600;color:var(--text);}
+.hero-date{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:3px;}
+.day-tag{font-size:10px;font-family:var(--mono);font-weight:600;padding:4px 10px;border-radius:20px;
+  background:var(--gdim);border:1px solid var(--gborder);color:var(--green);white-space:nowrap;}
+.hero-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:600;margin-bottom:4px;}
+.hero-val{font-size:44px;font-weight:700;letter-spacing:-1.5px;line-height:1;margin-bottom:10px;color:var(--text);}
+.hero-val span{font-size:24px;font-weight:500;color:var(--text2);}
+.hero-liq{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.hero-liq-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;}
+.hero-liq-val{font-size:17px;font-weight:700;font-family:var(--mono);color:var(--text);letter-spacing:-.3px;}
+.hero-liq-d{font-size:10px;font-family:var(--mono);font-weight:600;}
+.hero-liq-d.up{color:var(--green-dk);}
+.hero-liq-d.dn{color:var(--wine);}
+.hero-liq-d.nt{color:var(--text3);}
+
+/* ==================== META BAR + STATUS ==================== */
+.meta-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.meta-pct{font-size:13px;font-weight:700;font-family:var(--mono);flex-shrink:0;min-width:44px;}
+.meta-pct.g{color:var(--green);}
+.meta-pct.a{color:var(--amber);}
+.meta-pct.r{color:var(--red);}
+.meta-bar{flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;}
+.meta-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.meta-fill.g{background:var(--green);}
+.meta-fill.a{background:var(--amber);}
+.meta-fill.r{background:var(--red);}
+.meta-lbl{font-size:10px;color:var(--text3);font-family:var(--mono);flex-shrink:0;}
+.meta-status{font-size:11px;font-family:var(--mono);margin-top:4px;margin-bottom:10px;padding-left:52px;font-weight:600;}
+.meta-status.g{color:var(--green);}
+.meta-status.a{color:var(--amber);}
+.meta-status.r{color:var(--red);}
+.meta-status.nt{color:var(--text3);}
+
+/* ==================== COMPARATIVOS ==================== */
+.comp-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:var(--rs);
+  padding:10px 12px;margin-bottom:8px;}
+.comp-icon{font-size:16px;flex-shrink:0;}
+.comp-txt{font-size:11px;color:var(--text2);line-height:1.4;}
+.comp-txt b{color:var(--text);font-weight:600;}
+.comp-delta{margin-left:auto;font-size:11px;font-weight:700;font-family:var(--mono);flex-shrink:0;}
+.comp-delta.up{color:var(--green-dk);}
+.comp-delta.dn{color:var(--wine);}
+.comp-delta.nt{color:var(--text3);}
+
+/* ==================== KPI GRID ==================== */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.kitem{background:var(--bg3);border-radius:var(--rs);padding:12px 12px;}
+.k-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);
+  margin-bottom:6px;font-weight:600;}
+.k-val{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1;color:var(--text);}
+.k-delta{font-size:10px;font-family:var(--mono);font-weight:600;margin-top:5px;}
+.k-delta.up{color:var(--green-dk);}
+.k-delta.dn{color:var(--wine);}
+.k-delta.nt{color:var(--text3);}
+
+/* ==================== PLATAFORMAS ==================== */
+.plat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.plat{background:var(--bg3);border-radius:var(--rs);padding:12px;}
+.plat-hdr{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
+.plat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.plat-dot.del{background:var(--blue-del1);}
+.plat-dot.ub{background:var(--green-uber1);}
+.plat-name{font-size:12px;font-weight:700;color:var(--text);letter-spacing:.02em;}
+.plat-total{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;color:var(--text);}
+.plat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.plat-row:last-child{margin-bottom:0;}
+.plat-lbl{font-size:10px;color:var(--text3);font-weight:500;}
+.plat-v{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--text);}
+.plat-v.money-del1,.plat-v.money-del2,.plat-v.money-del3,
+.plat-v.money-uber1,.plat-v.money-uber2{color:var(--text);}
+.plat-v.neutral{color:var(--text2);}
+
+/* ==================== LÍQUIDO + DESCONTOS ==================== */
+.liq-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.liq-card{background:var(--bg3);border-radius:var(--rs);padding:12px;}
+.liq-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);
+  margin-bottom:8px;font-weight:600;}
+.liq-val{font-size:22px;font-weight:700;letter-spacing:-.5px;color:var(--text);}
+.ded-item{display:flex;justify-content:space-between;align-items:center;font-size:11px;
+  margin-top:6px;font-family:var(--mono);}
+.ded-lbl{color:var(--text2);font-weight:500;}
+.ded-val-neg,.ded-val-pos{color:var(--text);font-weight:600;}
+.ded-val-neu{color:var(--text4);font-weight:500;}
+.ded-subtotal{display:flex;justify-content:space-between;align-items:center;
+  margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;font-family:var(--mono);font-weight:700;}
+.ded-subtotal-lbl{color:var(--text2);text-transform:uppercase;letter-spacing:.06em;font-size:10px;}
+.ded-subtotal-val.pos{color:var(--green);}
+.ded-subtotal-val.neg{color:var(--wine);}
+.ded-subtotal-val.neu{color:var(--text3);}
+
+/* ==================== SELECTOR ==================== */
+.sel-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.sel-lbl{font-size:11px;color:var(--text2);font-weight:600;flex-shrink:0;letter-spacing:.02em;}
+.sel{background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+  font-family:var(--mono);font-size:11px;font-weight:500;padding:8px 12px;border-radius:var(--rs);
+  flex:1;cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
+
+/* ==================== WEEK CARD ==================== */
+.wcard{background:var(--bg2);border:1px solid var(--gborder);border-radius:var(--r);padding:16px;margin-bottom:10px;}
+.wc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.wbadge{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;
+  background:var(--gdim);border:1px solid var(--gborder);color:var(--green);}
+.wperiod{font-size:10px;color:var(--text3);font-family:var(--mono);font-weight:500;}
+.wval-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:600;margin-bottom:3px;}
+.wval{font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1;color:var(--text);}
+.wsub{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono);}
+.wdelta{font-size:11px;font-family:var(--mono);font-weight:600;margin-top:6px;}
+.wdelta.up{color:var(--green-dk);}
+.wdelta.dn{color:var(--wine);}
+.wdelta.nt{color:var(--text3);}
+.wmetrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;}
+.wm{background:var(--bg3);border-radius:var(--rs);padding:10px 11px;}
+.wm-l{font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;
+  letter-spacing:.06em;font-weight:600;}
+.wm-v{font-size:15px;font-weight:700;color:var(--text);}
+.wm-d{font-size:10px;font-family:var(--mono);font-weight:600;margin-top:3px;}
+.wm-d.up{color:var(--green-dk);}
+.wm-d.dn{color:var(--wine);}
+.wm-d.nt{color:var(--text3);}
+
+/* ==================== MONTH STATS ==================== */
+.mstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.mstat{background:var(--bg3);border-radius:var(--rs);padding:12px;}
+.ms-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);
+  margin-bottom:5px;font-weight:600;}
+.ms-val{font-size:20px;font-weight:700;letter-spacing:-.5px;color:var(--text);}
+.ms-sub{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono);}
+
+/* ==================== CHART CARD ==================== */
+.cc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.cc-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+.cc-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px;}
+.cc-sub{font-size:10px;color:var(--text3);margin-top:3px;font-family:var(--mono);}
+.ctabs{display:flex;gap:4px;flex-wrap:wrap;}
+.ctab{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;
+  color:var(--text3);cursor:pointer;font-family:var(--font);font-weight:600;transition:all .15s;}
+.ctab.on{background:var(--bg3);border-color:var(--border2);color:var(--text);}
+.ch{position:relative;width:100%;}
+
+/* Legenda visual de cores */
+.clegend{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;
+  padding-top:10px;border-top:1px solid var(--border);font-size:10px;font-family:var(--mono);
+  color:var(--text3);flex-wrap:wrap;}
+.clegend-item{display:flex;align-items:center;gap:5px;}
+.clegend-dot{width:10px;height:10px;border-radius:2px;}
+.clegend-dot.g{background:var(--green);}
+.clegend-dot.r{background:var(--red);}
+.clegend-line{width:14px;height:2px;border-top:2px dashed;}
+.clegend-line.amber{border-color:var(--amber);}
+.clegend-line.purple{border-color:var(--purple);}
+
+/* ==================== DONUT ==================== */
+.donut-wrap{display:flex;align-items:center;justify-content:center;padding:10px 0;}
+.donut-canvas-wrap{position:relative;width:170px;height:170px;}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;}
+.donut-pct{font-size:28px;font-weight:700;font-family:var(--mono);line-height:1;}
+.donut-pct.g{color:var(--green);}
+.donut-pct.a{color:var(--amber);}
+.donut-pct.r{color:var(--red);}
+.donut-sub{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:5px;
+  text-transform:uppercase;letter-spacing:.1em;font-weight:600;}
+
+/* Donut composição receita */
+.donut-compose-wrap{display:flex;flex-direction:column;align-items:center;padding:12px 0;}
+.donut-compose-container{position:relative;width:180px;height:180px;}
+.donut-compose-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;}
+.donut-compose-val{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1;color:var(--text);}
+.donut-compose-lbl{font-size:9px;color:var(--text3);font-family:var(--mono);
+  margin-top:4px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;}
+.donut-compose-legend{margin-top:14px;display:flex;flex-direction:column;gap:4px;width:100%;max-width:360px;}
+.dcl-item{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;font-size:10px;font-family:var(--mono);color:var(--text2);}
+.dcl-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.dcl-val{font-weight:600;color:var(--text);text-align:right;}
+.dcl-pct{font-weight:500;color:var(--text3);text-align:right;min-width:42px;}
+.donut-alert{font-size:10px;color:var(--red);font-family:var(--mono);text-align:center;margin-top:8px;
+  padding:6px 10px;background:var(--rdim);border:1px solid var(--rborder);border-radius:var(--rs);display:none;}
+.donut-alert.on{display:block;}
+
+/* ==================== TABLE ==================== */
+.tw{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
+.tw-toolbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+  border-bottom:1px solid var(--border);}
+.tw-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.02em;}
+.tw-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);
+  font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 11px;border-radius:var(--rs);
+  cursor:pointer;transition:all .2s;}
+.tw-btn.on{background:var(--gdim);border-color:var(--gborder);color:var(--green);}
+.tw-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap;}
+thead th{text-align:left;padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text3);
+  font-weight:700;font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);
+  background:var(--bg3);}
+thead th.r{text-align:right;}
+thead th.delta-col{display:none;}
+table.show-deltas thead th.delta-col{display:table-cell;}
+tbody td{padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text2);}
+tbody td.r{text-align:right;font-family:var(--mono);font-weight:500;}
+tbody tr.day-row td{padding:7px 11px;background:var(--bg3);font-size:10px;color:var(--text3);}
+tbody tr.day-row td:first-child{padding-left:28px;}
+tbody tr.day-row{display:none;}
+tbody tr.day-row.show{display:table-row;}
+tbody tr.week-summary{display:none;}
+tbody tr.week-summary.show{display:table-row;}
+tbody tr.week-summary td{padding:10px 11px;background:rgba(57,211,83,0.05);border-left:2px solid var(--green);
+  font-size:10px;color:var(--text2);font-family:var(--mono);}
+tbody tr.week-row{cursor:pointer;transition:background .15s;}
+tbody tr.week-row:hover td{background:var(--bg3);}
+tbody tr.week-row.expanded td{background:var(--bg3);}
+tbody td.delta-col{display:none;}
+table.show-deltas tbody td.delta-col{display:table-cell;}
+.row-expand{display:inline-block;width:10px;color:var(--text3);font-family:var(--mono);
+  margin-right:6px;transition:transform .2s;}
+.row-expand.open{transform:rotate(90deg);}
+.rc td{color:var(--text)!important;}
+.rc td:first-child{color:var(--green)!important;font-weight:700;}
+.rp td:first-child{color:var(--amber)!important;}
+.tup{color:var(--green-dk)!important;font-family:var(--mono);font-weight:600;}
+.tdn{color:var(--wine)!important;font-family:var(--mono);font-weight:600;}
+.tnt{color:var(--text4)!important;font-family:var(--mono);}
+.bdg{font-size:9px;padding:2px 6px;border-radius:6px;margin-left:5px;font-family:var(--mono);
+  vertical-align:middle;font-weight:600;}
+.bc{background:var(--gdim);color:var(--green);border:1px solid var(--gborder);}
+.bp{background:rgba(245,158,11,0.1);color:var(--amber);border:1px solid rgba(245,158,11,0.3);}
+
+/* ==================== HIST CHARTS GRID ==================== */
+.hist-main-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px;}
+
+/* ==================== ERROR / LOADING ==================== */
+.eb{background:var(--rdim);border:1px solid var(--rborder);color:var(--red);font-size:11px;
+  padding:10px 13px;border-radius:var(--rs);margin-bottom:11px;display:none;font-family:var(--mono);}
+.ls{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;z-index:999;}
+.ls.h{display:none;}
+.ldr{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--green);
+  border-radius:50%;animation:spin .8s linear infinite;}
+.ltx{font-size:11px;color:var(--text3);font-family:var(--mono);}
+
+@media(max-width:480px){
+  .plat-grid{grid-template-columns:1fr;}
+  .liq-row{grid-template-columns:1fr;}
+  .donut-compose-legend{grid-template-columns:1fr;}
+}
+@media(max-width:340px){
+  .kgrid{grid-template-columns:1fr;}
+  .wmetrics{grid-template-columns:1fr;}
+  .mstats{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="ls" id="ls"><div class="ldr"></div><div class="ltx">Carregando dados...</div></div>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="dot"></div>
+    <div class="logo">BP <b>Rider</b></div>
+    <div class="upd" id="upd"></div>
+  </div>
+  <button class="rbtn" id="rbtn" onclick="loadData()"><span class="sp" id="sp">↻</span> Atualizar</button>
+</div>
+
+<!-- ============ ABA DIÁRIO ============ -->
+<div class="view on" id="view-diario">
+  <div class="eb" id="err-diario"></div>
+  <div class="sel-row">
+    <span class="sel-lbl">📅 Dia</span>
+    <select class="sel" id="day-sel" onchange="renderDiario()"></select>
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-day" id="h-dayname">—</div>
+        <div class="hero-date" id="h-date">—</div>
+      </div>
+      <div class="day-tag" id="h-weektag">—</div>
+    </div>
+    <div class="hero-lbl">Receita bruta do dia</div>
+    <div class="hero-val" id="h-total"><span>€</span>—</div>
+    <div class="k-delta nt" id="h-total-d" style="margin-top:-4px;margin-bottom:10px;">—</div>
+    <div class="meta-row">
+      <div class="meta-pct" id="h-meta-pct">—</div>
+      <div class="meta-bar"><div class="meta-fill" id="h-meta-fill" style="width:0%"></div></div>
+      <div class="meta-lbl" id="h-meta-lbl">meta</div>
+    </div>
+    <div class="meta-status nt" id="h-meta-status">—</div>
+    <div class="comp-row">
+      <div class="comp-icon">📊</div>
+      <div class="comp-txt" id="comp-hist-txt">—</div>
+      <div class="comp-delta nt" id="comp-hist-delta">—</div>
+    </div>
+    <div class="hero-liq">
+      <div class="hero-liq-lbl">Receita líquida</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="hero-liq-val" id="h-liq">—</div>
+        <div class="hero-liq-d nt" id="h-liq-d"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stitle">Números do dia</div>
+  <div class="kgrid">
+    <div class="kitem"><div class="k-lbl">Fee / hora</div><div class="k-val" id="h-fh">—</div><div class="k-delta nt" id="h-fh-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / pedido</div><div class="k-val" id="h-fp">—</div><div class="k-delta nt" id="h-fp-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / km</div><div class="k-val" id="h-fkm">—</div><div class="k-delta nt" id="h-fkm-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedido / hora</div><div class="k-val" id="h-ph">—</div><div class="k-delta nt" id="h-ph-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Km totais</div><div class="k-val" id="h-km">—</div><div class="k-delta nt" id="h-km-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Horas trabalhadas</div><div class="k-val" id="h-horas">—</div><div class="k-delta nt" id="h-horas-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Minutos / pedido</div><div class="k-val" id="h-mp">—</div><div class="k-delta nt" id="h-mp-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedidos</div><div class="k-val" id="h-orders">—</div><div class="k-delta nt" id="h-orders-d">—</div></div>
+  </div>
+
+  <div class="stitle">Composição da receita do dia</div>
+  <div class="cc">
+    <div class="donut-compose-wrap">
+      <div class="donut-compose-container">
+        <canvas id="d-compose"></canvas>
+        <div class="donut-compose-center">
+          <div class="donut-compose-val" id="d-compose-val">€—</div>
+          <div class="donut-compose-lbl">total do dia</div>
+        </div>
+      </div>
+      <div class="donut-compose-legend" id="d-compose-legend"></div>
+      <div class="donut-alert" id="d-compose-alert">⚠ soma das partes diferente do total</div>
+    </div>
+  </div>
+
+  <div class="stitle">De onde veio a receita</div>
+  <div class="plat-grid">
+    <div class="plat">
+      <div class="plat-hdr"><div class="plat-dot del"></div><div class="plat-name">Deliveroo</div></div>
+      <div class="plat-total" id="h-del-tot">—</div>
+      <div class="plat-row"><span class="plat-lbl">Order fees</span><span class="plat-v money-del1" id="h-del-of">—</span></div>
+      <div class="plat-row"><span class="plat-lbl">Extra fees</span><span class="plat-v money-del2" id="h-del-ef">—</span></div>
+      <div class="plat-row"><span class="plat-lbl">Tips app</span><span class="plat-v money-del3" id="h-del-ta">—</span></div>
+      <div class="plat-row"><span class="plat-lbl">Pedidos</span><span class="plat-v neutral" id="h-del-ord">—</span></div>
+    </div>
+    <div class="plat">
+      <div class="plat-hdr"><div class="plat-dot ub"></div><div class="plat-name">Uber Eats</div></div>
+      <div class="plat-total" id="h-ub-tot">—</div>
+      <div class="plat-row"><span class="plat-lbl">Order fee</span><span class="plat-v money-uber1" id="h-ub-of">—</span></div>
+      <div class="plat-row"><span class="plat-lbl">Tips app</span><span class="plat-v money-uber2" id="h-ub-ta">—</span></div>
+      <div class="plat-row"><span class="plat-lbl">Pedidos</span><span class="plat-v neutral" id="h-ub-ord">—</span></div>
+    </div>
+  </div>
+
+  <div class="stitle">Descontos e tips do dia</div>
+  <div class="card">
+    <div id="h-deducts"></div>
+  </div>
+
+  <div class="stitle">Últimos 10 dias corridos</div>
+  <div class="cc" style="margin-bottom:0;">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Receita diária vs meta</div>
+        <div class="cc-sub">Últimos 10 dias · incluindo dias não trabalhados</div>
+      </div>
+    </div>
+    <div class="ch" style="height:170px;"><canvas id="mini-days"></canvas></div>
+    <div class="clegend">
+      <div class="clegend-item"><div class="clegend-dot g"></div><span>Atingiu (≥100%)</span></div>
+      <div class="clegend-item"><div class="clegend-dot r"></div><span>Não atingiu</span></div>
+      <div class="clegend-item"><div class="clegend-line amber"></div><span>Meta do dia</span></div>
+      <div class="clegend-item"><div class="clegend-line purple"></div><span>Média histórica</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA SEMANA ============ -->
+<div class="view" id="view-semana">
+  <div class="eb" id="err-sem"></div>
+  <div class="sel-row">
+    <span class="sel-lbl">📊 Semana</span>
+    <select class="sel" id="week-sel" onchange="renderSemana()"></select>
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-day" id="w-sel-b">—</div>
+        <div class="hero-date" id="w-sel-p">—</div>
+      </div>
+    </div>
+    <div class="hero-lbl">Receita bruta da semana</div>
+    <div class="hero-val" id="w-sel-rec"><span>€</span>—</div>
+    <div class="k-delta nt" id="w-sel-rec-d" style="margin-top:-4px;margin-bottom:10px;">—</div>
+    <div class="meta-row">
+      <div class="meta-pct" id="w-meta-pct">—</div>
+      <div class="meta-bar"><div class="meta-fill" id="w-meta-fill" style="width:0%"></div></div>
+      <div class="meta-lbl">meta €840</div>
+    </div>
+    <div class="meta-status nt" id="w-meta-status">—</div>
+    <div class="hero-liq">
+      <div class="hero-liq-lbl">Receita líquida</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="hero-liq-val" id="w-sel-liq">—</div>
+        <div class="hero-liq-d nt" id="w-sel-liq-d"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stitle">Números da semana</div>
+  <div class="kgrid">
+    <div class="kitem"><div class="k-lbl">Fee / hora</div><div class="k-val" id="w-sel-fh">—</div><div class="k-delta nt" id="w-sel-fh-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / pedido</div><div class="k-val" id="w-sel-fp">—</div><div class="k-delta nt" id="w-sel-fp-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / km</div><div class="k-val" id="w-sel-fkm">—</div><div class="k-delta nt" id="w-sel-fkm-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedido / hora</div><div class="k-val" id="w-sel-ph">—</div><div class="k-delta nt" id="w-sel-ph-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Km totais</div><div class="k-val" id="w-sel-km">—</div><div class="k-delta nt" id="w-sel-km-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Horas trabalhadas</div><div class="k-val" id="w-sel-h">—</div><div class="k-delta nt" id="w-sel-h-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Minutos / pedido</div><div class="k-val" id="w-sel-mp">—</div><div class="k-delta nt" id="w-sel-mp-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedidos</div><div class="k-val" id="w-sel-ord">—</div><div class="k-delta nt" id="w-sel-ord-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Dias trabalhados</div><div class="k-val" id="w-sel-dias">—</div><div class="k-delta nt" id="w-sel-dias-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Melhor dia</div><div class="k-val" id="w-sel-best" style="font-size:16px;">—</div><div class="k-delta nt" id="w-sel-best-d">—</div></div>
+  </div>
+
+  <div class="stitle">Progresso da semana</div>
+  <div class="cc">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title" id="w-proj-title">Receita acumulada</div>
+        <div class="cc-sub">Dia a dia da semana vs meta acumulada</div>
+      </div>
+    </div>
+    <div class="ch" style="height:180px;"><canvas id="w-proj-chart"></canvas></div>
+  </div>
+
+  <div class="stitle">Receita por dia da semana</div>
+  <div class="cc">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Seg a Dom vs sua média</div>
+        <div class="cc-sub">Cores por atingimento · Linha = média histórica</div>
+      </div>
+    </div>
+    <div class="ch" style="height:180px;"><canvas id="w-hist-chart"></canvas></div>
+    <div class="clegend">
+      <div class="clegend-item"><div class="clegend-dot g"></div><span>Atingiu</span></div>
+      <div class="clegend-item"><div class="clegend-dot r"></div><span>Não atingiu</span></div>
+      <div class="clegend-item"><div class="clegend-line purple"></div><span>Média histórica</span></div>
+    </div>
+  </div>
+
+  <div class="stitle">Ganho por hora trabalhada</div>
+  <div class="cc" style="margin-bottom:0;">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Bruto vs Líquido</div>
+        <div class="cc-sub">Últimas 8 semanas</div>
+      </div>
+    </div>
+    <div class="ch" style="height:190px;"><canvas id="w-eff-chart"></canvas></div>
+  </div>
+</div>
+
+<!-- ============ ABA MÊS ============ -->
+<div class="view" id="view-mes">
+  <div class="eb" id="err-mes"></div>
+  <div class="sel-row">
+    <span class="sel-lbl">📆 Mês</span>
+    <select class="sel" id="month-sel" onchange="renderMes()"></select>
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-day" id="m-month-name">—</div>
+        <div class="hero-date">Meta mensal €3.600</div>
+      </div>
+    </div>
+    <div class="hero-lbl">Receita bruta do mês</div>
+    <div class="hero-val" id="m-rec"><span>€</span>—</div>
+    <div class="k-delta nt" id="m-rec-d" style="margin-top:-4px;margin-bottom:10px;">—</div>
+    <div class="meta-row">
+      <div class="meta-pct" id="m-meta-pct">—</div>
+      <div class="meta-bar"><div class="meta-fill" id="m-meta-fill" style="width:0%"></div></div>
+      <div class="meta-lbl">meta €3.600</div>
+    </div>
+    <div class="meta-status nt" id="m-meta-status">—</div>
+    <div class="hero-liq">
+      <div class="hero-liq-lbl">Receita líquida</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="hero-liq-val" id="m-liq">—</div>
+        <div class="hero-liq-d nt" id="m-liq-d"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stitle">Números do mês</div>
+  <div class="kgrid">
+    <div class="kitem"><div class="k-lbl">Fee / hora</div><div class="k-val" id="m-fh">—</div><div class="k-delta nt" id="m-fh-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / pedido</div><div class="k-val" id="m-fp">—</div><div class="k-delta nt" id="m-fp-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / km</div><div class="k-val" id="m-fkm">—</div><div class="k-delta nt" id="m-fkm-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedido / hora</div><div class="k-val" id="m-ph">—</div><div class="k-delta nt" id="m-ph-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Km totais</div><div class="k-val" id="m-km">—</div><div class="k-delta nt" id="m-km-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Horas trabalhadas</div><div class="k-val" id="m-h">—</div><div class="k-delta nt" id="m-h-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Minutos / pedido</div><div class="k-val" id="m-mp">—</div><div class="k-delta nt" id="m-mp-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedidos</div><div class="k-val" id="m-ord">—</div><div class="k-delta nt" id="m-ord-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Dias trabalhados</div><div class="k-val" id="m-dias">—</div><div class="k-delta nt" id="m-dias-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Melhor semana</div><div class="k-val" id="m-best" style="font-size:16px;">—</div><div class="k-delta nt" id="m-best-d">—</div></div>
+  </div>
+
+  <div class="stitle">Evolução diária do mês</div>
+  <div class="cc">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Receita acumulada dia a dia</div>
+        <div class="cc-sub">Realizado vs projeção para atingir €3.600</div>
+      </div>
+    </div>
+    <div class="ch" style="height:200px;"><canvas id="m-proj-chart"></canvas></div>
+  </div>
+
+  <div class="stitle">Semanas do mês</div>
+  <div class="cc" style="margin-bottom:0;">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Receita por semana</div>
+        <div class="cc-sub">Cores por atingimento · Linha = meta €840</div>
+      </div>
+    </div>
+    <div class="ch" style="height:170px;"><canvas id="m-weeks-chart"></canvas></div>
+    <div class="clegend">
+      <div class="clegend-item"><div class="clegend-dot g"></div><span>Atingiu</span></div>
+      <div class="clegend-item"><div class="clegend-dot r"></div><span>Não atingiu</span></div>
+      <div class="clegend-item"><div class="clegend-line amber"></div><span>Meta semanal</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABA HISTÓRICO ============ -->
+<div class="view" id="view-hist">
+  <div class="eb" id="err-hist"></div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-day">Todo o período</div>
+        <div class="hero-date" id="hi-period">—</div>
+      </div>
+    </div>
+    <div class="hero-lbl">Receita bruta histórica</div>
+    <div class="hero-val" id="hi-rec"><span>€</span>—</div>
+    <div class="hero-liq">
+      <div class="hero-liq-lbl">Receita líquida</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="hero-liq-val" id="hi-liq">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stitle">Números do histórico</div>
+  <div class="kgrid">
+    <div class="kitem"><div class="k-lbl">Fee / hora médio</div><div class="k-val" id="hi-fh">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / pedido médio</div><div class="k-val" id="hi-fp">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / km médio</div><div class="k-val" id="hi-fkm">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedido / hora médio</div><div class="k-val" id="hi-ph">—</div></div>
+    <div class="kitem"><div class="k-lbl">Km totais</div><div class="k-val" id="hi-km">—</div></div>
+    <div class="kitem"><div class="k-lbl">Horas totais</div><div class="k-val" id="hi-h">—</div></div>
+    <div class="kitem"><div class="k-lbl">Minutos / pedido médio</div><div class="k-val" id="hi-mp">—</div></div>
+    <div class="kitem"><div class="k-lbl">Pedidos totais</div><div class="k-val" id="hi-ord">—</div></div>
+    <div class="kitem"><div class="k-lbl">Semanas trabalhadas</div><div class="k-val" id="hi-sem">—</div></div>
+    <div class="kitem"><div class="k-lbl">Melhor semana</div><div class="k-val" id="hi-best" style="font-size:16px;">—</div></div>
+  </div>
+
+  <div class="stitle">Todas as suas semanas</div>
+
+  <!-- 2 gráficos principais: Receita e Fee/hora -->
+  <div class="cc">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Receita por semana</div>
+        <div class="cc-sub">Bruto vs Líquido · Linha = média histórica · acumulado total (eixo direito)</div>
+      </div>
+    </div>
+    <div class="ch" style="height:200px;"><canvas id="hist-receita"></canvas></div>
+  </div>
+
+  <div class="cc">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Ganho por hora por semana</div>
+        <div class="cc-sub">Fee/hora bruto · Linha = média histórica</div>
+      </div>
+    </div>
+    <div class="ch" style="height:180px;"><canvas id="hist-feehora"></canvas></div>
+  </div>
+
+  <!-- Gráfico secundário com toggle -->
+  <div class="cc">
+    <div class="cc-hdr">
+      <div>
+        <div class="cc-title">Horas e pedidos por semana</div>
+        <div class="cc-sub">Dados secundários</div>
+      </div>
+      <div class="ctabs">
+        <button class="ctab on" onclick="swEvo2('horas',this)">Hrs</button>
+        <button class="ctab" onclick="swEvo2('orders',this)">Ped</button>
+      </div>
+    </div>
+    <div class="ch" style="height:170px;"><canvas id="hist-sec"></canvas></div>
+  </div>
+
+  <div class="stitle">Tabela completa de semanas</div>
+  <div class="tw">
+    <div class="tw-toolbar">
+      <span class="tw-title">Toque numa semana para expandir</span>
+      <button class="tw-btn" id="btn-deltas" onclick="toggleDeltas()">Δ variações</button>
+    </div>
+    <div class="tw-scroll">
+      <table id="hist-table">
+        <thead>
+          <tr>
+            <th>Semana</th>
+            <th class="r">Receita</th>
+            <th class="r delta-col">Δ</th>
+            <th class="r">Deliveroo</th>
+            <th class="r">Uber</th>
+            <th class="r">Tips</th>
+            <th class="r">Fee/h</th>
+            <th class="r delta-col">Δ</th>
+            <th class="r">Hrs</th>
+            <th class="r">Dias</th>
+            <th class="r">Ped</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tb"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="tab on" onclick="showView('diario',this)"><div class="tab-icon">📅</div>Diário</button>
+  <button class="tab" onclick="showView('semana',this)"><div class="tab-icon">📊</div>Semana</button>
+  <button class="tab" onclick="showView('mes',this)"><div class="tab-icon">📆</div>Mês</button>
+  <button class="tab" onclick="showView('hist',this)"><div class="tab-icon">📋</div>Histórico</button>
+</nav>
+
+<script>
+const SID='10WtLLHGEnWKAJUiGPXuQAwkH5q5q8AutVIUzlElY1iU',GID='648832250';
+const MTHS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MTHS_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DNs=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DNs_FULL=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const META_DIA={1:80,2:80,3:120,4:125,5:135,6:150,0:150};
+const META_SEM=840,META_MES=3600;
+const MIN_WAGE_IE=14.15; // Salário mínimo Irlanda €/hora
+const GRAY_MED='#8b949e'; // Cinza médio para linha de referência
+
+// Cores padronizadas (refletem as variáveis CSS)
+const C={
+  green:'#39d353',greenDk:'#2da44e',red:'#f85149',wine:'#8b1a2f',
+  blue:'#58a6ff',blueDel1:'#0969da',blueDel2:'#58a6ff',blueDel3:'#a5d6ff',
+  greenUber1:'#1a7f37',greenUber2:'#2da44e',
+  amber:'#f59e0b',purple:'#bc8cff',gold:'#eab308',
+  text2:'#8b949e',text3:'#6e7781',text4:'#484f58'
+};
+
+let gRaw=[],gW=[],gMonths=[];
+let curEvo2='horas';
+let charts={};
+let showDeltas=false;
+
+const gridC='rgba(255,255,255,0.04)',tickC='#6e7781';
+
+// Base options tooltip padronizado
+const baseTooltip={backgroundColor:'#161b22',borderColor:'#30363d',borderWidth:1,
+  titleColor:'#e6edf3',bodyColor:'#e6edf3',padding:10,
+  titleFont:{family:'Space Grotesk',size:11,weight:'600'},
+  bodyFont:{family:'JetBrains Mono',size:11}};
+
+const baseLegend={color:'#8b949e',font:{size:10,family:'Space Grotesk',weight:'500'},
+  boxWidth:12,boxHeight:3,padding:10};
+
+const bO={
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:baseTooltip},
+  scales:{
+    x:{ticks:{color:tickC,font:{size:9,family:'JetBrains Mono'},maxRotation:0,autoSkip:false},
+       grid:{color:gridC},border:{color:'transparent'}},
+    y:{ticks:{color:tickC,font:{family:'JetBrains Mono',size:9}},
+       grid:{color:gridC},border:{color:'transparent'}}
+  }
+};
+
+function pn(v){if(v===null||v===undefined||v===''||v==='-')return NaN;
+  const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?NaN:n;}
+function nn(v){return isNaN(v)||v===undefined?0:v;}
+function fe(v){return isNaN(v)||v===undefined?'—':'€'+Math.abs(v).toFixed(2);}
+function fes(v){return isNaN(v)?'—':(v<0?'-':'')+'€'+Math.abs(v).toFixed(2);}
+function fh(v){return isNaN(v)?'—':v.toFixed(1)+'h';}
+function getMon(d){const dt=new Date(d);const dy=dt.getDay();
+  dt.setDate(dt.getDate()-((dy===0)?6:dy-1));return dt;}
+function fmtR(m){const s=new Date(m);s.setDate(m.getDate()+6);
+  return m.getMonth()===s.getMonth()
+    ?`${m.getDate()}–${s.getDate()} ${MTHS[m.getMonth()]}`
+    :`${m.getDate()} ${MTHS[m.getMonth()]}–${s.getDate()} ${MTHS[s.getMonth()]}`;}
+function isoW(dt){const d=new Date(dt);d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+4-(d.getDay()||7));
+  const y=d.getFullYear();return{y,w:Math.ceil((((d-new Date(y,0,1))/864e5)+1)/7)};}
+function localDateKey(d){const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+
+function dlt(cv,pv,fmt){
+  if(isNaN(pv)||pv===0||isNaN(cv))return{html:'',cls:'nt',abs:'—',pct:'—'};
+  const d=cv-pv,p=(d/Math.abs(pv))*100,s=d>=0?'+':'';
+  return{html:`<span class="${d>=0?'up':'dn'}">${d>=0?'↑':'↓'} ${s}${fmt(Math.abs(d))} (${s}${p.toFixed(0)}%)</span>`,
+    cls:d>=0?'up':'dn',abs:(d>=0?'+':'-')+fmt(Math.abs(d)),pct:(d>=0?'+':'')+p.toFixed(0)+'%'};
+}
+
+function mkChart(id,cfg){
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+  const el=document.getElementById(id);
+  if(!el)return;
+  charts[id]=new Chart(el.getContext('2d'),cfg);
+  return charts[id];
+}
+
+// Plugin factory: desenha labels fixos em cima de dataset de barra ou linha
+// opts: { datasetIndex:0, format:v=>'€'+v, color:'#aaa', yOffset:6, minValue:null }
+function mkLabelPlugin(id, opts){
+  const format=opts.format||(v=>v);
+  const color=opts.color||'#e6edf3';
+  const yOffset=opts.yOffset!==undefined?opts.yOffset:6;
+  const minValue=opts.minValue!==undefined?opts.minValue:null;
+  const fontSize=opts.fontSize||9;
+  return {
+    id:id,
+    afterDatasetsDraw:(chart)=>{
+      const {ctx}=chart;
+      const ds=chart.getDatasetMeta(opts.datasetIndex);
+      if(!ds||ds.hidden) return;
+      ctx.save();
+      ctx.font=`600 ${fontSize}px JetBrains Mono`;
+      ctx.fillStyle=color;
+      ctx.textAlign='center';
+      ctx.textBaseline='bottom';
+      ds.data.forEach((pt,i)=>{
+        const v=chart.data.datasets[opts.datasetIndex].data[i];
+        if(v==null||v===0) return;
+        if(minValue!==null&&v<minValue) return;
+        ctx.fillText(format(v),pt.x,pt.y-yOffset);
+      });
+      ctx.restore();
+    }
+  };
+}
+
+// Status binário: atingiu (≥100%) ou não atingiu (<100%)
+function metaStatus(pct){
+  if(pct>=100) return {text:'✓ Meta atingida',cls:'g'};
+  if(pct>=75) return {text:'⚠ Meta quase atingida',cls:'a'};
+  return {text:'✕ Meta não atingida',cls:'r'};
+}
+
+// Cor binária (verde/vermelho) para barras - ≥100% é verde
+function barColorBinary(val, meta){
+  if(val==null || val===0) return {bg:'rgba(110,119,129,0.3)', bd:C.text4};
+  const p=val/meta*100;
+  if(p>=100) return {bg:'rgba(57,211,83,0.55)', bd:C.green};
+  return {bg:'rgba(248,81,73,0.5)', bd:C.red};
+}
+
+// Cor ternária (verde/amarelo/vermelho) para barras
+function barColorTernary(val, meta){
+  if(val==null || val===0) return {bg:'rgba(110,119,129,0.3)', bd:C.text4};
+  const p=val/meta*100;
+  if(p>=100) return {bg:'rgba(57,211,83,0.55)', bd:C.green};
+  if(p>=75) return {bg:'rgba(245,158,11,0.5)', bd:C.amber};
+  return {bg:'rgba(248,81,73,0.5)', bd:C.red};
+}
+
+function showView(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('view-'+id).classList.add('on');
+  btn.classList.add('on');
+  if(gW.length){
+    if(id==='semana') renderSemana();
+    if(id==='mes') renderMes();
+    if(id==='hist') renderHistorico();
+    if(id==='diario') renderDiario();
+  }
+}
+
+function loadData(){
+  const btn=document.getElementById('rbtn'),sp=document.getElementById('sp');
+  btn.classList.add('off');sp.classList.add('on');
+  const old=document.getElementById('_gs');if(old)old.remove();
+  const s=document.createElement('script');s.id='_gs';
+  const cb='_gcb'+Date.now();
+  window[cb]=function(r){
+    btn.classList.remove('off');sp.classList.remove('on');
+    document.getElementById('ls').classList.add('h');
+    try{
+      processGviz(r);
+      document.getElementById('upd').textContent=' · '+new Date().toLocaleTimeString('pt-BR');
+    }catch(e){showErr('diario','Erro: '+e.message);console.error(e);}
+    delete window[cb];
+  };
+  s.src=`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:json%3BresponseHandler:${cb}&gid=${GID}`;
+  s.onerror=function(){
+    btn.classList.remove('off');sp.classList.remove('on');
+    document.getElementById('ls').classList.add('h');
+    showErr('diario','Não foi possível carregar. Verifique o acesso público da planilha.');
+  };
+  document.head.appendChild(s);
+}
+
+function showErr(view,m){
+  const e=document.getElementById('err-'+view);
+  if(e){e.textContent='⚠ '+m;e.style.display='block';}
+}
+
+function processGviz(resp){
+  const tbl=resp.table;
+  const cols=tbl.cols||[];
+  const rows=tbl.rows||[];
+
+  const colIdx={};
+  cols.forEach((c,i)=>{
+    const lbl=((c&&c.label)||'').trim().toLowerCase();
+    if(lbl && colIdx[lbl]===undefined) colIdx[lbl]=i;
+  });
+
+  const COL_NAMES={
+    data:'data',total:'total receita',totalOrders:'total orders',tipscash:'tips cash',
+    uberTotal:'uber eats total',uberOF:'uber eats order fee',uberTips:'uber eats tips',uberOrd:'uber eats n orders',
+    delTotal:'deliveroo total',delOF:'deliveroo order fee',delEF:'deliveroo extras fee',
+    delTips:'deliveroo tips',delOrd:'deliveroo n orders',
+    feehora:'fee/hora',ordershora:'orders/hora',horas:'horas totais',km:'km totais',
+    bike:'aluguel bike',rentDel:'aluguel conta deliveroo',rentUber:'aluguel conta uber eats'
+  };
+
+  function idxFor(key){const name=COL_NAMES[key];if(!name) return undefined;return colIdx[name.toLowerCase()];}
+  function cv(row,key){const idx=idxFor(key);
+    if(idx===undefined||!row||!row.c||!row.c[idx]||row.c[idx].v===null||row.c[idx].v===undefined) return null;
+    return row.c[idx].v;}
+  function parseDate(v){
+    if(!v) return null;
+    if(typeof v==='string'&&v.startsWith('Date(')){
+      const p=v.replace('Date(','').replace(')','').split(',');
+      return new Date(+p[0],+p[1],+p[2]);
+    }
+    const d=new Date(v);return isNaN(d)?null:d;
+  }
+
+  const data=[];
+  for(const row of rows){
+    const dt=parseDate(cv(row,'data'));
+    if(!dt||dt.getFullYear()<2020) continue;
+    const horas=pn(cv(row,'horas'));
+    const total=pn(cv(row,'total'));
+    const bike=pn(cv(row,'bike'));
+    const rentDel=pn(cv(row,'rentDel'));
+    const rentUber=pn(cv(row,'rentUber'));
+    const liquido=nn(total)+nn(bike)+nn(rentDel)+nn(rentUber);
+    data.push({
+      date:dt,dateKey:localDateKey(dt),total,liquido,horas,
+      feehora:pn(cv(row,'feehora')),orders:pn(cv(row,'totalOrders')),
+      ordershora:pn(cv(row,'ordershora')),tipscash:pn(cv(row,'tipscash')),
+      km:pn(cv(row,'km')),
+      uberTotal:pn(cv(row,'uberTotal')),uberOF:pn(cv(row,'uberOF')),
+      uberTips:pn(cv(row,'uberTips')),uberOrd:pn(cv(row,'uberOrd')),
+      delTotal:pn(cv(row,'delTotal')),delOF:pn(cv(row,'delOF')),
+      delEF:pn(cv(row,'delEF')),delTips:pn(cv(row,'delTips')),
+      delOrd:pn(cv(row,'delOrd')),bike,rentDel,rentUber,
+      worked:!isNaN(horas)&&horas>0
+    });
+  }
+  if(!data.length){showErr('diario','Nenhum dado encontrado.');return;}
+  gRaw=data.sort((a,b)=>a.date-b.date);
+
+  // Weekly grouping
+  const wMap=new Map();
+  for(const r of gRaw){
+    if(!r.worked) continue;
+    const iso=isoW(r.date);
+    const key=iso.y+'_'+String(iso.w).padStart(2,'0');
+    if(!wMap.has(key)){
+      const mon=getMon(r.date);
+      wMap.set(key,{key,y:iso.y,wn:iso.w,label:`S${iso.w}/${String(iso.y).slice(-2)}`,
+        period:fmtR(mon),monday:mon,
+        receita:0,liquido:0,horas:0,km:0,dias:0,orders:0,tips:0,
+        delivRev:0,uberRev:0,days:[]});
+    }
+    const w=wMap.get(key);
+    w.receita+=nn(r.total);w.liquido+=nn(r.liquido);w.horas+=nn(r.horas);w.dias++;
+    w.km+=nn(r.km);
+    w.orders+=nn(r.orders);
+    w.tips+=nn(r.delTips)+nn(r.uberTips)+nn(r.tipscash);
+    w.delivRev+=nn(r.delTotal);
+    w.uberRev+=nn(r.uberTotal);
+    w.days.push(r);
+  }
+  gW=Array.from(wMap.values()).filter(w=>w.receita>0)
+    .sort((a,b)=>a.y!==b.y?a.y-b.y:a.wn-b.wn);
+  gW.forEach(w=>{
+    w.feehora=w.horas>0?w.receita/w.horas:NaN;
+    w.feehoraLiq=w.horas>0?w.liquido/w.horas:NaN;
+    w.feeorder=w.orders>0?w.receita/w.orders:NaN;
+    w.feekm=w.km>0?w.receita/w.km:NaN;
+    w.pedhora=w.horas>0?w.orders/w.horas:NaN;
+    w.minped=w.orders>0?(w.horas*60)/w.orders:NaN;
+    w.hpd=w.dias>0?w.horas/w.dias:NaN;
+    // Melhor dia da semana (maior receita)
+    const best=w.days.reduce((b,d)=>(b===null||nn(d.total)>nn(b.total))?d:b,null);
+    w.bestDay=best;
+  });
+
+  // Months
+  const monthSet=new Set();
+  for(const r of gRaw){
+    if(!r.worked) continue;
+    monthSet.add(r.date.getFullYear()+'-'+String(r.date.getMonth()+1).padStart(2,'0'));
+  }
+  gMonths=Array.from(monthSet).sort().reverse();
+
+  populateDaySelector();
+  populateWeekSelector();
+  populateMonthSelector();
+
+  waitChart(()=>{renderDiario();});
+}
+
+function waitChart(fn,n){
+  n=n||0;
+  if(typeof Chart!=='undefined'){fn();return;}
+  if(n>80){showErr('diario','Gráficos não carregaram. Verifique a conexão.');return;}
+  setTimeout(()=>waitChart(fn,n+1),100);
+}
+
+// ========== SELETORES ==========
+function populateDaySelector(){
+  const sel=document.getElementById('day-sel');
+  sel.innerHTML='';
+  const today=new Date();today.setHours(0,0,0,0);
+  const tStr=localDateKey(today);
+
+  const worked=gRaw.filter(r=>r.worked).sort((a,b)=>b.date-a.date);
+  for(const r of worked){
+    const d=r.date;
+    const dStr=r.dateKey||localDateKey(d);
+    const opt=document.createElement('option');
+    opt.value=dStr;
+    opt.textContent=`${DNs[d.getDay()]}, ${d.getDate()} ${MTHS[d.getMonth()]}${d.getFullYear()===today.getFullYear()?'':' '+d.getFullYear()}`;
+    if(dStr===tStr) opt.textContent='Hoje — '+opt.textContent;
+    sel.appendChild(opt);
+  }
+  if(worked.length>0) sel.value=worked[0].dateKey||localDateKey(worked[0].date);
+}
+
+function populateWeekSelector(){
+  const sel=document.getElementById('week-sel');
+  sel.innerHTML='';
+  [...gW].reverse().forEach((w,idx)=>{
+    const opt=document.createElement('option');
+    opt.value=w.key;
+    opt.textContent=`${w.label} · ${w.period}${idx===0?' (atual)':''}`;
+    sel.appendChild(opt);
+  });
+}
+
+function populateMonthSelector(){
+  const sel=document.getElementById('month-sel');
+  sel.innerHTML='';
+  const now=new Date();
+  const currKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  gMonths.forEach((mk)=>{
+    const [y,m]=mk.split('-').map(Number);
+    const opt=document.createElement('option');
+    opt.value=mk;
+    opt.textContent=`${MTHS_FULL[m-1]} ${y}${mk===currKey?' (atual)':''}`;
+    sel.appendChild(opt);
+  });
+}
+
+// ========== ABA DIÁRIO ==========
+function renderDiario(){
+  const sel=document.getElementById('day-sel');
+  const dateStr=sel.value;
+  if(!dateStr) return;
+
+  const today=new Date();today.setHours(0,0,0,0);
+  const [yy,mm,dd]=dateStr.split('-').map(Number);
+  const selDate=new Date(yy,mm-1,dd);selDate.setHours(0,0,0,0);
+
+  const r=gRaw.find(d=>(d.dateKey||localDateKey(d.date))===dateStr);
+  const isToday=dateStr===localDateKey(today);
+  const hasData=!!r&&r.worked;
+
+  const dowIdx=selDate.getDay();
+  document.getElementById('h-dayname').textContent=`${DNs[dowIdx]}, ${selDate.getDate()} ${MTHS[selDate.getMonth()]}`;
+  document.getElementById('h-date').textContent=isToday?'Hoje':String(selDate.getFullYear());
+
+  const iso=isoW(selDate);
+  const wk=gW.find(w=>w.y===iso.y&&w.wn===iso.w);
+  document.getElementById('h-weektag').textContent=wk?wk.label:'—';
+
+  const total=hasData?nn(r.total):0;
+  const metaDia=META_DIA[dowIdx]||80;
+  document.getElementById('h-total').innerHTML=`<span>€</span>${total.toFixed(2)}`;
+
+  // Meta bar + status
+  const pDia=total>0?(total/metaDia*100):0;
+  const clsDia=pDia>=100?'g':pDia>=75?'a':'r';
+  const mPct=document.getElementById('h-meta-pct');
+  mPct.textContent=total>0?pDia.toFixed(0)+'%':'—';
+  mPct.className='meta-pct '+(total>0?clsDia:'nt');
+  const mFill=document.getElementById('h-meta-fill');
+  mFill.style.width=Math.min(pDia,100)+'%';
+  mFill.className='meta-fill '+(total>0?clsDia:'r');
+  document.getElementById('h-meta-lbl').textContent=`meta €${metaDia}`;
+
+  const statusEl=document.getElementById('h-meta-status');
+  if(total>0){
+    const st=metaStatus(pDia);
+    statusEl.textContent=st.text;
+    statusEl.className='meta-status '+st.cls;
+  } else {
+    statusEl.textContent='Sem dados registrados';
+    statusEl.className='meta-status nt';
+  }
+
+  // Delta vs meta logo abaixo da receita bruta (padrão KPI)
+  const totalD=document.getElementById('h-total-d');
+  if(total>0){
+    const diff=total-metaDia;
+    const pctM=(diff/metaDia*100).toFixed(0);
+    const arrow=diff>=0?'↑':'↓';
+    totalD.textContent=`${arrow} ${diff>=0?'+':'-'}€${Math.abs(diff).toFixed(0)} (${diff>=0?'+':''}${pctM}%) vs meta €${metaDia}`;
+    totalD.className='k-delta '+(diff>=0?'up':'dn');
+    totalD.style.marginTop='-4px';totalD.style.marginBottom='10px';
+  } else {
+    totalD.textContent='sem dados';
+    totalD.className='k-delta nt';
+    totalD.style.marginTop='-4px';totalD.style.marginBottom='10px';
+  }
+
+  const histSameDay=gRaw.filter(d=>d.worked&&d.date.getDay()===dowIdx&&(d.dateKey||localDateKey(d.date))!==dateStr);
+  const histTxt=document.getElementById('comp-hist-txt');
+  const histDelta=document.getElementById('comp-hist-delta');
+  if(histSameDay.length>0){
+    const avg=histSameDay.reduce((s,d)=>s+nn(d.total),0)/histSameDay.length;
+    histTxt.innerHTML=`<b>Média histórica: €${avg.toFixed(0)}</b> · ${DNs_FULL[dowIdx]}s (${histSameDay.length} dias)`;
+    if(total>0){
+      const diff2=total-avg;
+      const pct2=(diff2/avg*100).toFixed(0);
+      histDelta.textContent=(diff2>=0?'+':'-')+`€${Math.abs(diff2).toFixed(0)} (${diff2>=0?'+':''}${pct2}%)`;
+      histDelta.className='comp-delta '+(diff2>=0?'up':'dn');
+    } else {
+      histDelta.textContent='sem dados';
+      histDelta.className='comp-delta nt';
+    }
+  } else {
+    histTxt.innerHTML=`Ainda sem histórico para ${DNs_FULL[dowIdx]}s`;
+    histDelta.textContent='—';
+    histDelta.className='comp-delta nt';
+  }
+
+  // KPIs
+  const prevWorked=gRaw.filter(d=>d.worked&&(d.dateKey||localDateKey(d.date))<dateStr).sort((a,b)=>b.date-a.date)[0];
+  function setKpi(vId,dId,val,pval,fmt){
+    const safeVal=(val===null||val===undefined||isNaN(val))?NaN:val;
+    document.getElementById(vId).textContent=fmt(safeVal);
+    if(!dId) return;
+    const d=dlt(safeVal,pval,fmt);
+    const el=document.getElementById(dId);
+    el.innerHTML=d.html||'—';
+    el.className='k-delta '+(d.cls||'nt');
+  }
+  const pv=k=>prevWorked?prevWorked[k]:NaN;
+  setKpi('h-fh','h-fh-d',hasData?r.feehora:NaN,pv('feehora'),fe);
+  // Fee / pedido = receita total / número de pedidos
+  const fp=hasData&&!isNaN(r.total)&&!isNaN(r.orders)&&r.orders>0?r.total/r.orders:NaN;
+  const fpv=prevWorked&&!isNaN(prevWorked.total)&&!isNaN(prevWorked.orders)&&prevWorked.orders>0?prevWorked.total/prevWorked.orders:NaN;
+  setKpi('h-fp','h-fp-d',fp,fpv,fe);
+  // Fee / km = receita total / km rodados
+  const fkm=hasData&&!isNaN(r.total)&&!isNaN(r.km)&&r.km>0?r.total/r.km:NaN;
+  const fkmv=prevWorked&&!isNaN(prevWorked.total)&&!isNaN(prevWorked.km)&&prevWorked.km>0?prevWorked.total/prevWorked.km:NaN;
+  setKpi('h-fkm','h-fkm-d',fkm,fkmv,fe);
+  // Pedido / hora
+  const ph=hasData&&!isNaN(r.orders)&&!isNaN(r.horas)&&r.horas>0?r.orders/r.horas:NaN;
+  const ppv=prevWorked&&!isNaN(prevWorked.orders)&&!isNaN(prevWorked.horas)&&prevWorked.horas>0?prevWorked.orders/prevWorked.horas:NaN;
+  setKpi('h-ph','h-ph-d',ph,ppv,v=>isNaN(v)?'—':v.toFixed(1)+'/h');
+  // Km totais
+  setKpi('h-km','h-km-d',hasData?r.km:NaN,pv('km'),v=>isNaN(v)?'—':v.toFixed(1)+' km');
+  // Horas trabalhadas
+  setKpi('h-horas','h-horas-d',hasData?r.horas:NaN,pv('horas'),fh);
+  // Minutos / pedido = (horas × 60) / orders
+  const mp=hasData&&!isNaN(r.horas)&&!isNaN(r.orders)&&r.orders>0?(r.horas*60)/r.orders:NaN;
+  const mpv=prevWorked&&!isNaN(prevWorked.horas)&&!isNaN(prevWorked.orders)&&prevWorked.orders>0?(prevWorked.horas*60)/prevWorked.orders:NaN;
+  setKpi('h-mp','h-mp-d',mp,mpv,v=>isNaN(v)?'—':v.toFixed(1)+' min');
+  // Pedidos
+  setKpi('h-orders','h-orders-d',hasData?r.orders:NaN,pv('orders'),v=>isNaN(v)?'—':Math.round(v)+'');
+
+  // Donut composição da receita
+  renderDiarioCompose(r, hasData, total);
+
+  // Breakdown plataformas
+  if(hasData){
+    document.getElementById('h-del-tot').textContent=fe(r.delTotal);
+    document.getElementById('h-del-of').textContent=fe(r.delOF);
+    document.getElementById('h-del-ef').textContent=fe(r.delEF);
+    document.getElementById('h-del-ta').textContent=fe(r.delTips);
+    document.getElementById('h-del-ord').textContent=isNaN(r.delOrd)?'—':Math.round(r.delOrd)+'';
+    document.getElementById('h-ub-tot').textContent=fe(r.uberTotal);
+    document.getElementById('h-ub-of').textContent=fe(r.uberOF);
+    document.getElementById('h-ub-ta').textContent=fe(r.uberTips);
+    document.getElementById('h-ub-ord').textContent=isNaN(r.uberOrd)?'—':Math.round(r.uberOrd)+'';
+  } else {
+    ['h-del-tot','h-del-of','h-del-ef','h-del-ta','h-del-ord',
+     'h-ub-tot','h-ub-of','h-ub-ta','h-ub-ord'].forEach(id=>{document.getElementById(id).textContent='—';});
+  }
+
+  // Líquido + descontos (com subtotal)
+  document.getElementById('h-liq').textContent=hasData?fes(r.liquido):'—';
+  const dliq=hasData?dlt(r.liquido,pv('liquido'),fe):{html:'',cls:'nt'};
+  const liqDEl=document.getElementById('h-liq-d');
+  liqDEl.innerHTML=dliq.html||'';
+  liqDEl.className='hero-liq-d '+(dliq.cls||'nt');
+
+  const deds=document.getElementById('h-deducts');
+  deds.innerHTML='';
+  if(hasData){
+    // Always visible: Bike, Conta Deliveroo, Conta Uber, Tips cash
+    const addD=(lbl,val,type)=>{
+      const el=document.createElement('div');
+      el.className='ded-item';
+      let valHtml;
+      if(isNaN(val)||val===0){
+        valHtml=`<span class="ded-val-neu">—</span>`;
+      } else if(type==='pos'){
+        valHtml=`<span class="ded-val-pos">+${fe(val)}</span>`;
+      } else {
+        valHtml=`<span class="ded-val-neg">-${fe(val)}</span>`;
+      }
+      el.innerHTML=`<span class="ded-lbl">${lbl}</span>${valHtml}`;
+      deds.appendChild(el);
+    };
+    addD('Bike',r.bike,'neg');
+    addD('Conta Deliveroo',r.rentDel,'neg');
+    addD('Conta Uber',r.rentUber,'neg');
+    addD('Tips cash',r.tipscash,'pos');
+
+    // Subtotal: descontos + tips cash (sinal)
+    const descTotal=nn(r.bike)+nn(r.rentDel)+nn(r.rentUber); // negativos
+    const tipsCash=nn(r.tipscash); // positivo
+    const balance=descTotal+tipsCash;
+
+    const sub=document.createElement('div');
+    sub.className='ded-subtotal';
+    const bClass=balance>0?'pos':balance<0?'neg':'neu';
+    const bSign=balance>=0?'+':'-';
+    sub.innerHTML=`<span class="ded-subtotal-lbl">Balanço</span>
+      <span class="ded-subtotal-val ${bClass}">${bSign}€${Math.abs(balance).toFixed(2)}</span>`;
+    deds.appendChild(sub);
+  } else {
+    deds.innerHTML='<div class="ded-item"><span class="ded-lbl">Sem dados</span><span class="ded-val-neu">—</span></div>';
+  }
+
+  // Mini gráfico últimos 10 dias corridos
+  renderMini10Days(selDate);
+}
+
+function renderDiarioCompose(r, hasData, total){
+  const canvasEl=document.getElementById('d-compose');
+  const valEl=document.getElementById('d-compose-val');
+  const legEl=document.getElementById('d-compose-legend');
+  const alertEl=document.getElementById('d-compose-alert');
+
+  if(!hasData || total<=0){
+    valEl.textContent='€0';
+    legEl.innerHTML='';
+    alertEl.classList.remove('on');
+    if(charts['d-compose']){charts['d-compose'].destroy();delete charts['d-compose'];}
+    return;
+  }
+
+  const parts=[
+    {lbl:'Deliveroo order fee', val:nn(r.delOF), color:C.blueDel1},
+    {lbl:'Deliveroo extra fee', val:nn(r.delEF), color:C.blueDel2},
+    {lbl:'Deliveroo tips',       val:nn(r.delTips), color:C.blueDel3},
+    {lbl:'Uber order fee',       val:nn(r.uberOF), color:C.greenUber1},
+    {lbl:'Uber tips',            val:nn(r.uberTips), color:C.greenUber2},
+    {lbl:'Tips cash',            val:nn(r.tipscash), color:GRAY_MED},
+  ].filter(p=>p.val>0);
+
+  const sumParts=parts.reduce((s,p)=>s+p.val,0);
+  const diff=Math.abs(sumParts-total);
+
+  valEl.textContent='€'+total.toFixed(2);
+
+  // Legend 3 colunas: label | € | %
+  legEl.innerHTML='';
+  parts.forEach(p=>{
+    const pct=(p.val/total*100).toFixed(1);
+    const it=document.createElement('div');
+    it.className='dcl-item';
+    it.innerHTML=`<div class="dcl-dot" style="background:${p.color}"></div>
+      <span>${p.lbl}</span>
+      <span class="dcl-val">€${p.val.toFixed(2)}</span>
+      <span class="dcl-pct">${pct}%</span>`;
+    legEl.appendChild(it);
+  });
+
+  // Alert se diferença > €0.01
+  if(diff>0.01){
+    alertEl.textContent=`⚠ Soma (€${sumParts.toFixed(2)}) ≠ total (€${total.toFixed(2)}) · diff €${diff.toFixed(2)}`;
+    alertEl.classList.add('on');
+  } else {
+    alertEl.classList.remove('on');
+  }
+
+  mkChart('d-compose',{type:'doughnut',
+    data:{
+      labels:parts.map(p=>p.lbl),
+      datasets:[{data:parts.map(p=>p.val),
+        backgroundColor:parts.map(p=>p.color),
+        borderWidth:0}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{display:false},
+        tooltip:{...baseTooltip,
+          callbacks:{label:ctx=>{
+            const pct=(ctx.raw/total*100).toFixed(1);
+            return ' '+ctx.label+': €'+ctx.raw.toFixed(2)+' · '+pct+'%';
+          }}}}},
+    plugins:[{
+      id:'donutPercentLabels',
+      afterDatasetsDraw:(chart)=>{
+        const {ctx}=chart;
+        const meta=chart.getDatasetMeta(0);
+        if(!meta) return;
+        ctx.save();
+        ctx.font='700 10px JetBrains Mono';
+        ctx.fillStyle='#ffffff';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        meta.data.forEach((arc,i)=>{
+          const val=chart.data.datasets[0].data[i];
+          const pct=val/total*100;
+          if(pct<5) return; // só fatias ≥5%
+          // posição no centro da fatia
+          const {x,y,outerRadius,innerRadius,startAngle,endAngle}=arc.getProps(
+            ['x','y','outerRadius','innerRadius','startAngle','endAngle'],true);
+          const midAngle=(startAngle+endAngle)/2;
+          const midRadius=(outerRadius+innerRadius)/2;
+          const tx=x+Math.cos(midAngle)*midRadius;
+          const ty=y+Math.sin(midAngle)*midRadius;
+          ctx.fillText(pct.toFixed(0)+'%',tx,ty);
+        });
+        ctx.restore();
+      }
+    }]});
+}
+
+function renderMini10Days(selDate){
+  // 10 dias corridos terminando no dia selecionado (ou hoje se for o mais recente)
+  const endDate=new Date(selDate);
+  const days=[];
+  for(let i=9;i>=0;i--){
+    const d=new Date(endDate);d.setDate(endDate.getDate()-i);d.setHours(0,0,0,0);
+    const rec=gRaw.find(x=>{const xd=new Date(x.date);xd.setHours(0,0,0,0);return xd.getTime()===d.getTime();});
+    days.push({date:d,rec,dow:d.getDay()});
+  }
+
+  // Média histórica por dia da semana (considerando todos os dias trabalhados no histórico)
+  const avgByDow={};const cntByDow={};
+  for(const r of gRaw){
+    if(!r.worked)continue;
+    const dow=r.date.getDay();
+    avgByDow[dow]=(avgByDow[dow]||0)+r.total;
+    cntByDow[dow]=(cntByDow[dow]||0)+1;
+  }
+
+  const labels=days.map(d=>`${DNs[d.dow]}\n${d.date.getDate()}/${MTHS[d.date.getMonth()].substring(0,3)}`);
+  const receitas=days.map(d=>d.rec?nn(d.rec.total):0);
+  const metas=days.map(d=>META_DIA[d.dow]||80);
+  const avgHistorica=days.map(d=>cntByDow[d.dow]>0?avgByDow[d.dow]/cntByDow[d.dow]:null);
+
+  const colors=days.map((d,i)=>{
+    const rec=receitas[i];const meta=metas[i];
+    if(rec===0) return {bg:'rgba(110,119,129,0.3)',bd:C.text4};
+    return barColorBinary(rec,meta);
+  });
+
+  mkChart('mini-days',{type:'bar',
+    data:{labels,datasets:[
+      {type:'bar',label:'Receita',data:receitas,
+        backgroundColor:colors.map(c=>c.bg),
+        borderColor:colors.map(c=>c.bd),
+        borderWidth:1.5,borderRadius:4,order:3},
+      {type:'line',label:'Meta do dia',data:metas,
+        borderColor:C.amber,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[5,4],pointRadius:0,order:1,tension:0},
+      {type:'line',label:'Média histórica',data:avgHistorica,
+        borderColor:C.purple,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[3,3],pointRadius:0,
+        order:2,tension:0,spanGaps:false}
+    ]},
+    options:{...bO,
+      layout:{padding:{top:20}},
+      plugins:{...bO.plugins,
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{
+            title:ctx=>{const i=ctx[0].dataIndex;return DNs[days[i].dow]+', '+days[i].date.getDate()+'/'+MTHS[days[i].date.getMonth()];},
+            label:ctx=>{
+              if(ctx.datasetIndex===0){const r=ctx.raw;return r===0?' sem trabalho':' receita: €'+r.toFixed(2);}
+              if(ctx.datasetIndex===1) return ' meta: €'+ctx.raw;
+              return ' média histórica: €'+(ctx.raw?ctx.raw.toFixed(2):'—');
+            }}}},
+      scales:{
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false,maxRotation:0,font:{size:8,family:'JetBrains Mono'}}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}
+      }},
+    plugins:[mkLabelPlugin('receitaLabels',{
+      datasetIndex:0,
+      format:v=>'€'+Math.round(v),
+      color:'#e6edf3',
+      yOffset:4,
+      minValue:1
+    })]});
+
+  // Tooltip toggle: touch fora do canvas OU segundo toque na mesma área esconde
+  setupTooltipToggle('mini-days');
+}
+
+// Helper global: toggle tooltip on touch/click
+function setupTooltipToggle(chartId){
+  const canvas=document.getElementById(chartId);
+  const ch=charts[chartId];
+  if(!canvas||!ch) return;
+  // Remove listeners anteriores (caso re-render)
+  if(canvas._ttCleanup) canvas._ttCleanup();
+  let lastIdx=-1;
+  const onTouch=(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const pt=e.touches?e.touches[0]:e;
+    const x=pt.clientX-rect.left;
+    const els=ch.getElementsAtEventForMode({x,y:pt.clientY-rect.top},'index',{intersect:false},false);
+    if(els.length===0) return;
+    const idx=els[0].index;
+    if(idx===lastIdx){
+      // segundo toque na mesma barra → esconde
+      ch.setActiveElements([]);
+      ch.tooltip.setActiveElements([],{x:0,y:0});
+      ch.update();
+      lastIdx=-1;
+    } else {
+      lastIdx=idx;
+    }
+  };
+  const onOutside=(e)=>{
+    if(!canvas.contains(e.target)){
+      ch.setActiveElements([]);
+      ch.tooltip.setActiveElements([],{x:0,y:0});
+      ch.update();
+      lastIdx=-1;
+    }
+  };
+  canvas.addEventListener('touchend',onTouch);
+  canvas.addEventListener('click',onTouch);
+  document.addEventListener('touchend',onOutside,true);
+  document.addEventListener('click',onOutside,true);
+  canvas._ttCleanup=()=>{
+    canvas.removeEventListener('touchend',onTouch);
+    canvas.removeEventListener('click',onTouch);
+    document.removeEventListener('touchend',onOutside,true);
+    document.removeEventListener('click',onOutside,true);
+  };
+}
+
+// ========== ABA SEMANA ==========
+function renderSemana(){
+  if(!gW.length)return;
+  const sel=document.getElementById('week-sel');
+  if(!sel.value) sel.value=gW[gW.length-1].key;
+  const wKey=sel.value;
+  const sIdx=gW.findIndex(w=>w.key===wKey);
+  if(sIdx<0) return;
+  const curr=gW[sIdx];
+  const prev=sIdx>0?gW[sIdx-1]:null;
+
+  // Helper para setar KPI + delta (padrão kitem)
+  function setK(vId,dId,val,pval,fmt){
+    const vEl=document.getElementById(vId);
+    if(!vEl) return;
+    vEl.textContent=fmt(val);
+    if(!dId) return;
+    const d=dlt(val,pval,fmt);
+    const el=document.getElementById(dId);
+    if(!el) return;
+    el.innerHTML=d.html||'—';
+    el.className='k-delta '+(d.cls||'nt');
+  }
+
+  // Hero
+  document.getElementById('w-sel-b').textContent=curr.label;
+  document.getElementById('w-sel-p').textContent=curr.period;
+  const recEl=document.getElementById('w-sel-rec');
+  recEl.innerHTML=`<span>€</span>${isNaN(curr.receita)?'—':curr.receita.toFixed(2)}`;
+
+  // Delta vs meta na receita bruta
+  const totalD=document.getElementById('w-sel-rec-d');
+  if(curr.receita>0){
+    const diffM=curr.receita-META_SEM;
+    const pctM=(diffM/META_SEM*100).toFixed(0);
+    const arrow=diffM>=0?'↑':'↓';
+    totalD.textContent=`${arrow} ${diffM>=0?'+':'-'}€${Math.abs(diffM).toFixed(0)} (${diffM>=0?'+':''}${pctM}%) vs meta €${META_SEM}`;
+    totalD.className='k-delta '+(diffM>=0?'up':'dn');
+  } else {
+    totalD.textContent='sem dados';
+    totalD.className='k-delta nt';
+  }
+
+  // Receita líquida no hero
+  document.getElementById('w-sel-liq').textContent=fes(curr.liquido);
+  const liqD=dlt(curr.liquido,prev?prev.liquido:NaN,fe);
+  const liqDEl=document.getElementById('w-sel-liq-d');
+  liqDEl.innerHTML=liqD.html||'';
+  liqDEl.className='hero-liq-d '+(liqD.cls||'nt');
+
+  // KPIs grid
+  const pv=k=>prev?prev[k]:NaN;
+  setK('w-sel-fh','w-sel-fh-d',curr.feehora,pv('feehora'),fe);
+  setK('w-sel-fp','w-sel-fp-d',curr.feeorder,pv('feeorder'),fe);
+  setK('w-sel-fkm','w-sel-fkm-d',curr.feekm,pv('feekm'),fe);
+  setK('w-sel-ph','w-sel-ph-d',curr.pedhora,pv('pedhora'),v=>isNaN(v)?'—':v.toFixed(1)+'/h');
+  setK('w-sel-km','w-sel-km-d',curr.km,pv('km'),v=>isNaN(v)||v===0?'—':v.toFixed(1)+' km');
+  setK('w-sel-h','w-sel-h-d',curr.horas,pv('horas'),fh);
+  setK('w-sel-mp','w-sel-mp-d',curr.minped,pv('minped'),v=>isNaN(v)?'—':v.toFixed(1)+' min');
+  setK('w-sel-ord','w-sel-ord-d',curr.orders,pv('orders'),v=>isNaN(v)?'—':Math.round(v)+'');
+  setK('w-sel-dias','w-sel-dias-d',curr.dias,pv('dias'),v=>v+' dias');
+
+  // Melhor dia
+  const bestEl=document.getElementById('w-sel-best');
+  const bestDEl=document.getElementById('w-sel-best-d');
+  if(curr.bestDay){
+    const d=curr.bestDay.date;
+    const dname=DNs_FULL[d.getDay()];
+    bestEl.textContent=dname;
+    bestDEl.textContent='€'+nn(curr.bestDay.total).toFixed(0)+' · '+d.getDate()+'/'+MTHS[d.getMonth()];
+    bestDEl.className='k-delta nt';
+  } else {
+    bestEl.textContent='—';
+    bestDEl.textContent='';
+  }
+
+  // Meta semanal (barra linear + status no hero)
+  const pSem=curr.receita/META_SEM*100;
+  const cSem=pSem>=100?'g':pSem>=75?'a':'r';
+  const semPct=document.getElementById('w-meta-pct');
+  semPct.textContent=pSem.toFixed(0)+'%';
+  semPct.className='meta-pct '+cSem;
+  const wFill=document.getElementById('w-meta-fill');
+  if(wFill){wFill.style.width=Math.min(pSem,100)+'%';wFill.className='meta-fill '+cSem;}
+  const st=metaStatus(pSem);
+  const statusEl=document.getElementById('w-meta-status');
+  statusEl.textContent=st.text;
+  statusEl.className='meta-status '+st.cls;
+
+  // Acumulado vs projeção
+  const projTitle=document.getElementById('w-proj-title');
+  if(projTitle) projTitle.textContent=curr.label+' · '+curr.period;
+  const dowOrder=[1,2,3,4,5,6,0];
+  const dayLabels=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  const mon=new Date(curr.monday);
+  const weekDays=dowOrder.map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+  const today=new Date();today.setHours(0,0,0,0);
+  let acc=0;
+  const accData=weekDays.map(d=>{
+    if(d>today)return null;
+    const r=gRaw.find(x=>{const xd=new Date(x.date);xd.setHours(0,0,0,0);return xd.getTime()===d.getTime()&&x.worked;});
+    acc+=r?nn(r.total):0;
+    return parseFloat(acc.toFixed(2));
+  });
+  let accMeta=0;
+  const metaData=dowOrder.map(dow=>{accMeta+=META_DIA[dow]||80;return accMeta;});
+
+  mkChart('w-proj-chart',{type:'line',
+    data:{labels:dayLabels,datasets:[
+      {label:'Acumulado real',data:accData,borderColor:C.blue,backgroundColor:'rgba(88,166,255,0.08)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.blue,fill:true,tension:0.3,spanGaps:false,order:2},
+      {label:'Meta acumulada',data:metaData,borderColor:C.amber,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[5,4],pointRadius:0,tension:0,order:1}
+    ]},
+    options:{...bO,
+      layout:{padding:{top:20}},
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:baseLegend},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>ctx.raw==null?' '+ctx.dataset.label+': pendente':' '+ctx.dataset.label+': €'+ctx.raw.toFixed(2)}}},
+      scales:{...bO.scales,y:{...bO.scales.y,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v}}}},
+    plugins:[mkLabelPlugin('wProjLabels',{
+      datasetIndex:0,
+      format:v=>'€'+Math.round(v),
+      color:'#e6edf3',
+      yOffset:8,
+      minValue:1
+    })]});
+
+  // Gráfico receita por dia com cores binárias
+  const avgByDow={};const cntByDow={};
+  for(const r of gRaw){
+    if(!r.worked)continue;
+    const dow=r.date.getDay();
+    avgByDow[dow]=(avgByDow[dow]||0)+r.total;
+    cntByDow[dow]=(cntByDow[dow]||0)+1;
+  }
+  const histAvg=dowOrder.map(d=>cntByDow[d]>0?avgByDow[d]/cntByDow[d]:null);
+  const currWeekData=weekDays.map(d=>{
+    const r=gRaw.find(x=>{const xd=new Date(x.date);xd.setHours(0,0,0,0);return xd.getTime()===d.getTime()&&x.worked;});
+    return r?r.total:0;
+  });
+  const colors=currWeekData.map((v,i)=>{
+    const dow=dowOrder[i];const meta=META_DIA[dow]||80;
+    return barColorBinary(v,meta);
+  });
+
+  mkChart('w-hist-chart',{type:'bar',
+    data:{labels:dayLabels,datasets:[
+      {label:'Esta semana',data:currWeekData,
+        backgroundColor:colors.map(c=>c.bg),
+        borderColor:colors.map(c=>c.bd),
+        borderWidth:1.5,borderRadius:4,order:2},
+      {type:'line',label:'Média histórica',data:histAvg,
+        borderColor:C.purple,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[3,3],pointRadius:3,pointBackgroundColor:C.purple,tension:0,order:1}
+    ]},
+    options:{...bO,
+      layout:{padding:{top:20}},
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:{...baseLegend,
+          filter:item=>item.text==='Média histórica'}},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>{
+            if(ctx.datasetIndex===0)return ctx.raw===0?' sem trabalho':' esta semana: €'+ctx.raw.toFixed(2);
+            return ' média histórica: €'+(ctx.raw?ctx.raw.toFixed(2):'—');
+          }}}},
+      scales:{...bO.scales,
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}}},
+    plugins:[mkLabelPlugin('wHistLabels',{
+      datasetIndex:0,
+      format:v=>'€'+Math.round(v),
+      color:'#e6edf3',
+      yOffset:4,
+      minValue:1
+    })]});
+
+  // Eficiência — linhas duplas (bruto + líquido) com média histórica
+  const last8=gW.slice(-8);
+  const avgFhBruto=last8.reduce((s,w)=>s+(isNaN(w.feehora)?0:w.feehora),0)/last8.filter(w=>!isNaN(w.feehora)).length;
+
+  mkChart('w-eff-chart',{type:'line',
+    data:{labels:last8.map(w=>w.label),datasets:[
+      {label:'Fee/h bruto',data:last8.map(w=>isNaN(w.feehora)?null:parseFloat(w.feehora.toFixed(2))),
+        borderColor:C.blue,backgroundColor:'rgba(88,166,255,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.blue,pointBorderColor:C.blue,
+        tension:0.25,fill:false,order:3,spanGaps:true},
+      {label:'Fee/h líquido',data:last8.map(w=>isNaN(w.feehoraLiq)?null:parseFloat(w.feehoraLiq.toFixed(2))),
+        borderColor:C.green,backgroundColor:'rgba(57,211,83,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.green,pointBorderColor:C.green,
+        tension:0.25,fill:false,order:2,spanGaps:true},
+      {label:'Média histórica',data:last8.map(()=>parseFloat(avgFhBruto.toFixed(2))),
+        borderColor:C.purple,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[3,3],pointRadius:0,tension:0,order:1},
+      {label:'Mínimo IE €'+MIN_WAGE_IE+'/h',data:last8.map(()=>MIN_WAGE_IE),
+        borderColor:GRAY_MED,backgroundColor:'transparent',
+        borderWidth:1.5,borderDash:[2,3],pointRadius:0,tension:0,order:0}
+    ]},
+    options:{...bO,
+      layout:{padding:{top:20}},
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:baseLegend},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>' '+ctx.dataset.label+': €'+(ctx.raw||0).toFixed(2)+'/h'}}},
+      scales:{...bO.scales,
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}}},
+    plugins:[mkLabelPlugin('wEffLabels',{
+      datasetIndex:0,
+      format:v=>'€'+v.toFixed(1),
+      color:'#e6edf3',
+      yOffset:8,
+      minValue:0.01
+    })]});
+}
+
+// ========== ABA MÊS ==========
+function renderMes(){
+  if(!gMonths.length)return;
+  const sel=document.getElementById('month-sel');
+  if(!sel.value) sel.value=gMonths[0];
+  const mKey=sel.value;
+  const [yy,mm]=mKey.split('-').map(Number);
+  const now=new Date();
+  const isCurrentMonth=(yy===now.getFullYear()&&mm===(now.getMonth()+1));
+
+  // Mês atual
+  const mData=gRaw.filter(r=>r.worked&&r.date.getFullYear()===yy&&r.date.getMonth()===(mm-1));
+  const mRec=mData.reduce((s,r)=>s+nn(r.total),0);
+  const mLiq=mData.reduce((s,r)=>s+nn(r.liquido),0);
+  const mH=mData.reduce((s,r)=>s+nn(r.horas),0);
+  const mKm=mData.reduce((s,r)=>s+nn(r.km),0);
+  const mOrd=mData.reduce((s,r)=>s+nn(r.orders),0);
+  const mDias=mData.length;
+  const mFh=mH>0?mRec/mH:NaN;
+  const mFp=mOrd>0?mRec/mOrd:NaN;
+  const mFkm=mKm>0?mRec/mKm:NaN;
+  const mPh=mH>0?mOrd/mH:NaN;
+  const mMp=mOrd>0?(mH*60)/mOrd:NaN;
+
+  // Mês anterior para deltas
+  const prevDate=new Date(yy,mm-2,1);
+  const pyy=prevDate.getFullYear(),pmm=prevDate.getMonth();
+  const pData=gRaw.filter(r=>r.worked&&r.date.getFullYear()===pyy&&r.date.getMonth()===pmm);
+  const pRec=pData.reduce((s,r)=>s+nn(r.total),0);
+  const pLiq=pData.reduce((s,r)=>s+nn(r.liquido),0);
+  const pH=pData.reduce((s,r)=>s+nn(r.horas),0);
+  const pKm=pData.reduce((s,r)=>s+nn(r.km),0);
+  const pOrd=pData.reduce((s,r)=>s+nn(r.orders),0);
+  const pDias=pData.length;
+  const pFh=pH>0?pRec/pH:NaN;
+  const pFp=pOrd>0?pRec/pOrd:NaN;
+  const pFkm=pKm>0?pRec/pKm:NaN;
+  const pPh=pH>0?pOrd/pH:NaN;
+  const pMp=pOrd>0?(pH*60)/pOrd:NaN;
+
+  // Melhor semana do mês
+  const monthWeeks=gW.filter(w=>{
+    const wMon=new Date(w.monday);
+    return (wMon.getFullYear()===yy&&wMon.getMonth()===(mm-1))||
+           (new Date(wMon.getTime()+6*864e5).getFullYear()===yy&&new Date(wMon.getTime()+6*864e5).getMonth()===(mm-1));
+  });
+  const bestWeek=monthWeeks.reduce((b,w)=>(b===null||w.receita>b.receita)?w:b,null);
+
+  // Helper
+  function setK(vId,dId,val,pval,fmt){
+    const vEl=document.getElementById(vId);
+    if(!vEl) return;
+    vEl.textContent=fmt(val);
+    if(!dId) return;
+    const d=dlt(val,pval,fmt);
+    const el=document.getElementById(dId);
+    if(!el) return;
+    el.innerHTML=d.html||'—';
+    el.className='k-delta '+(d.cls||'nt');
+  }
+
+  // Hero
+  document.getElementById('m-month-name').textContent=MTHS_FULL[mm-1]+' '+yy;
+  const recEl=document.getElementById('m-rec');
+  recEl.innerHTML=`<span>€</span>${mRec.toFixed(2)}`;
+
+  // Delta vs meta na receita bruta do mês
+  const totalD=document.getElementById('m-rec-d');
+  if(mRec>0){
+    const diffM=mRec-META_MES;
+    const pctM=(diffM/META_MES*100).toFixed(0);
+    const arrow=diffM>=0?'↑':'↓';
+    totalD.textContent=`${arrow} ${diffM>=0?'+':'-'}€${Math.abs(diffM).toFixed(0)} (${diffM>=0?'+':''}${pctM}%) vs meta €${META_MES}`;
+    totalD.className='k-delta '+(diffM>=0?'up':'dn');
+  } else {
+    totalD.textContent='sem dados';
+    totalD.className='k-delta nt';
+  }
+
+  // Receita líquida no hero
+  document.getElementById('m-liq').textContent=fes(mLiq);
+  const liqD=dlt(mLiq,pLiq,fe);
+  const liqDEl=document.getElementById('m-liq-d');
+  liqDEl.innerHTML=liqD.html||'';
+  liqDEl.className='hero-liq-d '+(liqD.cls||'nt');
+
+  // KPIs grid
+  setK('m-fh','m-fh-d',mFh,pFh,fe);
+  setK('m-fp','m-fp-d',mFp,pFp,fe);
+  setK('m-fkm','m-fkm-d',mFkm,pFkm,fe);
+  setK('m-ph','m-ph-d',mPh,pPh,v=>isNaN(v)?'—':v.toFixed(1)+'/h');
+  setK('m-km','m-km-d',mKm,pKm,v=>isNaN(v)||v===0?'—':v.toFixed(1)+' km');
+  setK('m-h','m-h-d',mH,pH,fh);
+  setK('m-mp','m-mp-d',mMp,pMp,v=>isNaN(v)?'—':v.toFixed(1)+' min');
+  setK('m-ord','m-ord-d',mOrd,pOrd,v=>isNaN(v)?'—':Math.round(v)+'');
+  setK('m-dias','m-dias-d',mDias,pDias,v=>v+' dias');
+
+  // Melhor semana
+  const bestEl=document.getElementById('m-best');
+  const bestDEl=document.getElementById('m-best-d');
+  if(bestWeek){
+    bestEl.textContent=bestWeek.label;
+    bestDEl.textContent='€'+bestWeek.receita.toFixed(0)+' · '+bestWeek.period;
+    bestDEl.className='k-delta nt';
+  } else {
+    bestEl.textContent='—';
+    bestDEl.textContent='';
+  }
+
+  // Meta mensal (barra linear + status no hero)
+  const pMes=mRec/META_MES*100;
+  const cMes=pMes>=100?'g':pMes>=75?'a':'r';
+  const mPct=document.getElementById('m-meta-pct');
+  mPct.textContent=pMes.toFixed(0)+'%';
+  mPct.className='meta-pct '+cMes;
+  const mFill=document.getElementById('m-meta-fill');
+  if(mFill){mFill.style.width=Math.min(pMes,100)+'%';mFill.className='meta-fill '+cMes;}
+  const st=metaStatus(pMes);
+  const statusEl=document.getElementById('m-meta-status');
+  statusEl.textContent=st.text;
+  statusEl.className='meta-status '+st.cls;
+
+  // Acumulado diário do mês
+  const daysInMonth=new Date(yy,mm,0).getDate();
+  const labels=[];
+  for(let d=1;d<=daysInMonth;d++) labels.push(d+'');
+
+  let acc=0;
+  const accData=[];
+  const today=new Date();today.setHours(0,0,0,0);
+  for(let d=1;d<=daysInMonth;d++){
+    const dd=new Date(yy,mm-1,d);dd.setHours(0,0,0,0);
+    if(isCurrentMonth && dd>today){
+      accData.push(null);
+    } else {
+      const r=gRaw.find(x=>{const xd=new Date(x.date);xd.setHours(0,0,0,0);return xd.getTime()===dd.getTime()&&x.worked;});
+      acc+=r?nn(r.total):0;
+      accData.push(parseFloat(acc.toFixed(2)));
+    }
+  }
+  const projData=labels.map((_,i)=>parseFloat(((i+1)/daysInMonth*META_MES).toFixed(2)));
+
+  mkChart('m-proj-chart',{type:'line',
+    data:{labels,datasets:[
+      {label:'Acumulado real',data:accData,borderColor:C.blue,backgroundColor:'rgba(88,166,255,0.08)',
+        borderWidth:2.5,pointRadius:1.5,pointBackgroundColor:C.blue,fill:true,tension:0.3,spanGaps:false,order:2},
+      {label:'Meta projetada',data:projData,borderColor:C.amber,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[5,4],pointRadius:0,tension:0.3,order:1}
+    ]},
+    options:{...bO,
+      plugins:{...bO.plugins,
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{
+            title:ctx=>'Dia '+ctx[0].label,
+            label:ctx=>ctx.raw===null?' '+ctx.dataset.label+': pendente':' '+ctx.dataset.label+': €'+ctx.raw.toFixed(2)
+          }},
+        legend:{display:true,position:'top',align:'end',labels:baseLegend}},
+      scales:{...bO.scales,
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,maxTicksLimit:10,autoSkip:true}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v}}}}});
+
+  // Semanas do mês — inclui TODAS as semanas do mês (futuras em branco)
+  // Calcula todas as segundas-feiras que representam semanas que tocam o mês selecionado
+  const firstDayMonth=new Date(yy,mm-1,1);
+  const lastDayMonth=new Date(yy,mm,0);
+  // Primeira segunda-feira cuja semana toca o mês
+  const firstMon=getMon(firstDayMonth);
+  // Última segunda-feira cuja semana toca o mês
+  const lastMon=getMon(lastDayMonth);
+  const allMonWeeks=[];
+  let cur=new Date(firstMon);
+  while(cur<=lastMon){
+    const monKey=localDateKey(cur);
+    const existing=gW.find(w=>localDateKey(new Date(w.monday))===monKey);
+    if(existing){
+      allMonWeeks.push({label:existing.label,receita:existing.receita,hasData:true,monday:new Date(cur)});
+    } else {
+      // Semana futura ou sem dados — monta label manualmente
+      const sun=new Date(cur.getTime()+6*864e5);
+      const lbl=cur.getMonth()===sun.getMonth()
+        ?`${cur.getDate()}–${sun.getDate()} ${MTHS[cur.getMonth()]}`
+        :`${cur.getDate()} ${MTHS[cur.getMonth()]}–${sun.getDate()} ${MTHS[sun.getMonth()]}`;
+      allMonWeeks.push({label:lbl,receita:null,hasData:false,monday:new Date(cur)});
+    }
+    cur=new Date(cur.getTime()+7*864e5);
+  }
+  const weekColors=allMonWeeks.map(w=>w.hasData?barColorBinary(w.receita,META_SEM):{bg:'rgba(110,119,129,0.15)',bd:'rgba(110,119,129,0.3)'});
+
+  mkChart('m-weeks-chart',{type:'bar',
+    data:{labels:allMonWeeks.map(w=>w.label),datasets:[
+      {label:'Receita',data:allMonWeeks.map(w=>w.hasData?parseFloat(w.receita.toFixed(2)):null),
+        backgroundColor:weekColors.map(c=>c.bg),
+        borderColor:weekColors.map(c=>c.bd),
+        borderWidth:1.5,borderRadius:4,order:2},
+      {type:'line',label:'Meta semanal',data:Array(allMonWeeks.length).fill(META_SEM),
+        borderColor:C.amber,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[5,4],pointRadius:0,order:1}
+    ]},
+    options:{...bO,
+      layout:{padding:{top:20}},
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:{...baseLegend,
+          filter:item=>item.text==='Meta semanal'}},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>{
+            const w=allMonWeeks[ctx.dataIndex];
+            if(ctx.datasetIndex===0){
+              return w.hasData?' receita: €'+ctx.raw.toFixed(2):' semana ainda não realizada';
+            }
+            return ' meta: €'+META_SEM;
+          }}}},
+      scales:{...bO.scales,
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}}},
+    plugins:[mkLabelPlugin('mWeeksLabels',{
+      datasetIndex:0,
+      format:v=>'€'+Math.round(v),
+      color:'#e6edf3',
+      yOffset:4,
+      minValue:1
+    })]});
+}
+
+// ========== ABA HISTÓRICO ==========
+function renderHistorico(){
+  if(!gW.length) return;
+
+  // Agregados de todo o histórico (weighted averages)
+  const totalRec=gW.reduce((s,w)=>s+w.receita,0);
+  const totalLiq=gW.reduce((s,w)=>s+w.liquido,0);
+  const totalH=gW.reduce((s,w)=>s+w.horas,0);
+  const totalKm=gW.reduce((s,w)=>s+w.km,0);
+  const totalOrd=gW.reduce((s,w)=>s+w.orders,0);
+  const histFh=totalH>0?totalRec/totalH:NaN;
+  const histFp=totalOrd>0?totalRec/totalOrd:NaN;
+  const histFkm=totalKm>0?totalRec/totalKm:NaN;
+  const histPh=totalH>0?totalOrd/totalH:NaN;
+  const histMp=totalOrd>0?(totalH*60)/totalOrd:NaN;
+  const bestW=gW.reduce((b,w)=>(b===null||w.receita>b.receita)?w:b,null);
+
+  // Período do histórico (primeira a última semana)
+  const firstW=gW[0],lastW=gW[gW.length-1];
+  const periodEl=document.getElementById('hi-period');
+  if(periodEl){
+    periodEl.textContent=`${firstW.label} – ${lastW.label} · ${gW.length} semanas`;
+  }
+
+  // Hero
+  const recEl=document.getElementById('hi-rec');
+  if(recEl) recEl.innerHTML=`<span>€</span>${totalRec.toFixed(2)}`;
+  const liqEl=document.getElementById('hi-liq');
+  if(liqEl) liqEl.textContent=fes(totalLiq);
+
+  // KPIs (sem deltas)
+  const setHi=(id,val,fmt)=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=fmt(val);
+  };
+  setHi('hi-fh',histFh,fe);
+  setHi('hi-fp',histFp,fe);
+  setHi('hi-fkm',histFkm,fe);
+  setHi('hi-ph',histPh,v=>isNaN(v)?'—':v.toFixed(1)+'/h');
+  setHi('hi-km',totalKm,v=>v===0?'—':v.toFixed(0)+' km');
+  setHi('hi-h',totalH,v=>isNaN(v)?'—':v.toFixed(0)+'h');
+  setHi('hi-mp',histMp,v=>isNaN(v)?'—':v.toFixed(1)+' min');
+  setHi('hi-ord',totalOrd,v=>Math.round(v)+'');
+  setHi('hi-sem',gW.length,v=>v+'');
+  const bestEl=document.getElementById('hi-best');
+  if(bestEl&&bestW){
+    bestEl.textContent=bestW.label+' · €'+bestW.receita.toFixed(0);
+  }
+
+  // Médias históricas (reusado nos gráficos abaixo)
+  const avgRec=totalRec/gW.length;
+  const avgFh=histFh;
+
+  // Acumulado total
+  let accTotal=0;
+  const acumulado=gW.map(w=>{accTotal+=w.receita;return parseFloat(accTotal.toFixed(2));});
+
+  // Gráfico principal: Receita (bruto + líquido + média + acumulado em 2 eixos)
+  mkChart('hist-receita',{type:'bar',
+    data:{labels:gW.map(w=>w.label),datasets:[
+      {label:'Receita bruta',data:gW.map(w=>parseFloat(w.receita.toFixed(2))),
+        backgroundColor:'rgba(88,166,255,0.55)',borderColor:C.blue,borderWidth:1.5,borderRadius:3,
+        yAxisID:'y',order:3},
+      {label:'Receita líquida',data:gW.map(w=>parseFloat(w.liquido.toFixed(2))),
+        backgroundColor:'rgba(57,211,83,0.55)',borderColor:C.green,borderWidth:1.5,borderRadius:3,
+        yAxisID:'y',order:2},
+      {type:'line',label:'Média histórica',data:gW.map(()=>parseFloat(avgRec.toFixed(2))),
+        borderColor:C.purple,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[3,3],pointRadius:0,yAxisID:'y',order:1},
+      {type:'line',label:'Acumulado total',data:acumulado,
+        borderColor:C.gold,backgroundColor:'transparent',
+        borderWidth:2,pointRadius:2,pointBackgroundColor:C.gold,tension:0.3,yAxisID:'y1',order:0}
+    ]},
+    options:{...bO,
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:baseLegend},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>' '+ctx.dataset.label+': €'+(ctx.raw||0).toFixed(2)}}},
+      scales:{
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
+        y:{...bO.scales.y,type:'linear',position:'left',beginAtZero:true,
+          title:{display:true,text:'Semana',color:C.text3,font:{size:9,family:'JetBrains Mono'}},
+          ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}},
+        y1:{type:'linear',position:'right',beginAtZero:true,
+          title:{display:true,text:'Acumulado',color:C.gold,font:{size:9,family:'JetBrains Mono'}},
+          ticks:{color:C.gold,font:{family:'JetBrains Mono',size:9},callback:v=>'€'+(v/1000).toFixed(1)+'k'},
+          grid:{display:false}}
+      }}});
+
+  // Gráfico fee/hora — linhas duplas (bruto + líquido) com média histórica
+  mkChart('hist-feehora',{type:'line',
+    data:{labels:gW.map(w=>w.label),datasets:[
+      {label:'Fee/h bruto',data:gW.map(w=>isNaN(w.feehora)?null:parseFloat(w.feehora.toFixed(2))),
+        borderColor:C.blue,backgroundColor:'rgba(88,166,255,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.blue,pointBorderColor:C.blue,
+        tension:0.25,fill:false,order:3,spanGaps:true},
+      {label:'Fee/h líquido',data:gW.map(w=>isNaN(w.feehoraLiq)?null:parseFloat(w.feehoraLiq.toFixed(2))),
+        borderColor:C.green,backgroundColor:'rgba(57,211,83,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.green,pointBorderColor:C.green,
+        tension:0.25,fill:false,order:2,spanGaps:true},
+      {label:'Média histórica',data:gW.map(()=>parseFloat(avgFh.toFixed(2))),
+        borderColor:C.purple,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[3,3],pointRadius:0,order:1},
+      {label:'Mínimo IE €'+MIN_WAGE_IE+'/h',data:gW.map(()=>MIN_WAGE_IE),
+        borderColor:GRAY_MED,backgroundColor:'transparent',
+        borderWidth:1.5,borderDash:[2,3],pointRadius:0,tension:0,order:0}
+    ]},
+    options:{...bO,
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:baseLegend},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>' '+ctx.dataset.label+': €'+(ctx.raw||0).toFixed(2)+'/h'}}},
+      scales:{...bO.scales,
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}}}});
+
+  // Gráfico secundário (horas ou pedidos)
+  buildEvo2(curEvo2);
+
+  // Tabela
+  buildHistTable();
+}
+
+function buildEvo2(type){
+  curEvo2=type;
+  if(!gW.length) return;
+  const cfg={
+    horas:{color:C.amber,data:gW.map(w=>parseFloat(w.horas.toFixed(1))),lbl:'Horas',fmt:v=>v.toFixed(1)+'h'},
+    orders:{color:C.red,data:gW.map(w=>Math.round(w.orders)),lbl:'Pedidos',fmt:v=>Math.round(v)+''}
+  }[type];
+
+  const avg=cfg.data.filter(v=>!isNaN(v)).reduce((s,v)=>s+v,0)/cfg.data.filter(v=>!isNaN(v)).length;
+
+  mkChart('hist-sec',{type:'bar',
+    data:{labels:gW.map(w=>w.label),datasets:[
+      {label:cfg.lbl,data:cfg.data,
+        backgroundColor:cfg.color+'88',borderColor:cfg.color,borderWidth:1.5,borderRadius:3,order:2},
+      {type:'line',label:'Média histórica',data:cfg.data.map(()=>parseFloat(avg.toFixed(1))),
+        borderColor:C.purple,backgroundColor:'transparent',
+        borderWidth:2,borderDash:[3,3],pointRadius:0,order:1}
+    ]},
+    options:{...bO,
+      plugins:{...bO.plugins,
+        legend:{display:true,position:'top',align:'end',labels:baseLegend},
+        tooltip:{...baseTooltip,mode:'index',intersect:false,
+          callbacks:{label:ctx=>' '+ctx.dataset.label+': '+cfg.fmt(ctx.raw||0)}}},
+      scales:{...bO.scales,
+        x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
+        y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>cfg.fmt(v)}}}}});
+}
+
+function swEvo2(t,btn){
+  document.querySelectorAll('#view-hist .ctab').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on');buildEvo2(t);
+}
+
+function toggleDeltas(){
+  showDeltas=!showDeltas;
+  const table=document.getElementById('hist-table');
+  const btn=document.getElementById('btn-deltas');
+  if(showDeltas){table.classList.add('show-deltas');btn.classList.add('on');}
+  else{table.classList.remove('show-deltas');btn.classList.remove('on');}
+}
+
+function toggleWeekRow(key){
+  const rows=document.querySelectorAll('tr.day-row[data-week="'+key+'"], tr.week-summary[data-week="'+key+'"]');
+  const weekRow=document.querySelector('tr.week-row[data-week="'+key+'"]');
+  const arrow=weekRow.querySelector('.row-expand');
+  const isOpen=rows[0]&&rows[0].classList.contains('show');
+  rows.forEach(r=>{
+    if(isOpen) r.classList.remove('show');
+    else r.classList.add('show');
+  });
+  if(arrow){
+    if(isOpen){arrow.classList.remove('open');weekRow.classList.remove('expanded');}
+    else{arrow.classList.add('open');weekRow.classList.add('expanded');}
+  }
+}
+
+function buildHistTable(){
+  const tb=document.getElementById('hist-tb');
+  tb.innerHTML='';
+  const reversed=[...gW].reverse();
+  reversed.forEach((w,i)=>{
+    const pp=i<reversed.length-1?reversed[i+1]:null;
+    const dr=dlt(w.receita,pp?pp.receita:NaN,v=>'€'+v.toFixed(0));
+    const dfh=dlt(w.feehora,pp?pp.feehora:NaN,v=>'€'+v.toFixed(2));
+    const tr=document.createElement('tr');
+    tr.className='week-row';
+    tr.setAttribute('data-week',w.key);
+    tr.onclick=()=>toggleWeekRow(w.key);
+    if(i===0)tr.classList.add('rc');else if(i===1)tr.classList.add('rp');
+    const b=i===0?'<span class="bdg bc">atual</span>':i===1?'<span class="bdg bp">ant.</span>':'';
+    tr.innerHTML=`
+      <td><span class="row-expand">▸</span><strong>${w.label}</strong>${b}<br><span style="font-size:9px;color:var(--text4);font-family:var(--mono);margin-left:16px;">${w.period}</span></td>
+      <td class="r">${fe(w.receita)}</td>
+      <td class="r delta-col ${dr.cls==='up'?'tup':dr.cls==='dn'?'tdn':'tnt'}">${dr.abs}</td>
+      <td class="r">${fe(w.delivRev)}</td>
+      <td class="r">${fe(w.uberRev)}</td>
+      <td class="r">${fe(w.tips)}</td>
+      <td class="r">${fe(w.feehora)}</td>
+      <td class="r delta-col ${dfh.cls==='up'?'tup':dfh.cls==='dn'?'tdn':'tnt'}">${dfh.abs}</td>
+      <td class="r">${fh(w.horas)}</td>
+      <td class="r">${w.dias}</td>
+      <td class="r">${isNaN(w.orders)?'—':Math.round(w.orders)}</td>`;
+    tb.appendChild(tr);
+
+    // Resumo da semana (melhor/pior dia, fee/hora médio)
+    const days=[...w.days].sort((a,b)=>a.date-b.date);
+    const bestDay=[...days].sort((a,b)=>b.total-a.total)[0];
+    const worstDay=[...days].sort((a,b)=>a.total-b.total)[0];
+
+    const sumTr=document.createElement('tr');
+    sumTr.className='week-summary';
+    sumTr.setAttribute('data-week',w.key);
+    const totalCols=showDeltas?11:9;
+    sumTr.innerHTML=`<td colspan="${totalCols}">
+      📊 <b>Resumo:</b>
+      melhor dia: ${DNs[bestDay.date.getDay()]} ${bestDay.date.getDate()}/${MTHS[bestDay.date.getMonth()]} (${fe(bestDay.total)}) ·
+      pior dia: ${DNs[worstDay.date.getDay()]} ${worstDay.date.getDate()}/${MTHS[worstDay.date.getMonth()]} (${fe(worstDay.total)}) ·
+      fee/hora médio: ${fe(w.feehora)}
+    </td>`;
+    tb.appendChild(sumTr);
+
+    days.forEach(d=>{
+      const dr2=document.createElement('tr');
+      dr2.className='day-row';
+      dr2.setAttribute('data-week',w.key);
+      dr2.innerHTML=`
+        <td>${DNs[d.date.getDay()]}, ${d.date.getDate()}/${MTHS[d.date.getMonth()]}</td>
+        <td class="r">${fe(d.total)}</td>
+        <td class="r delta-col tnt">—</td>
+        <td class="r">${fe(d.delTotal)}</td>
+        <td class="r">${fe(d.uberTotal)}</td>
+        <td class="r">${fe(nn(d.delTips)+nn(d.uberTips)+nn(d.tipscash))}</td>
+        <td class="r">${fe(d.feehora)}</td>
+        <td class="r delta-col tnt">—</td>
+        <td class="r">${fh(d.horas)}</td>
+        <td class="r">—</td>
+        <td class="r">${isNaN(d.orders)?'—':Math.round(d.orders)}</td>`;
+      tb.appendChild(dr2);
+    });
+  });
+}
+
+window.addEventListener('load',function(){
+  if(typeof loadData==='function'){loadData();}
+  else{
+    document.getElementById('ls').classList.add('h');
+    showErr('diario','Erro ao inicializar o dashboard.');
+  }
+});
+</script>
+</body>
+</html>
